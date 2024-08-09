@@ -23,4 +23,8 @@ class WaveDataset(torch.utils.data.Dataset):
     def __getitem__(self, index: int):
         file = self.files[index]
         data = scipy.io.loadmat(file)
-        return data["wavearray_param"], data["vs_r"], data["vp_r"]
+
+        wave = torch.from_numpy(data["wavearray_param"])
+        target = torch.Tensor((data["vs_r"].item(), data["vp_r"].item()))
+
+        return (wave, target)
