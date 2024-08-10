@@ -15,6 +15,7 @@ parser.add_argument("--data_dir", type=str, required=True)
 parser.add_argument("--learning_rate", type=float, default=0.001)
 parser.add_argument("--epochs", type=int, required=True)
 parser.add_argument("--batch_size", type=int, default=1)
+parser.add_argument("--dataloader_workers", type=int, default=0)
 parser.add_argument("--input_path", type=str, default=None)
 parser.add_argument("--output_path", type=str, default=None)
 parser.add_argument("--seed", type=int, default=0)
@@ -28,7 +29,6 @@ if __name__ == "__main__":
 
     ds = WaveDataset(
         args.data_dir,
-        dims_to_flatten=(-2, -1),
         target_length=1541,
         dtype=torch.float32,
     )
@@ -36,12 +36,14 @@ if __name__ == "__main__":
         torch.utils.data.DataLoader(
             ds_split,
             batch_size=args.batch_size,
-            num_workers=6,
+            num_workers=args.dataloader_workers,
         )
         for ds_split in split_dataset(ds, torch.ones(len(ds)), (0.7, 0.2, 0.1))
     )
 
-    model = WaveMlp(13 * 1541, 2)
+    x_shape, y_shape = map(lambda t: t.shape, ds[0])
+
+    model = WaveMlp(x_shape, y_shape)
     optimizer = torch.optim.Adam(model.parameters(), lr=args.learning_rate)
     loss_fn = torch.nn.MSELoss(reduction="sum")
 
