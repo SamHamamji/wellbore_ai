@@ -42,11 +42,13 @@ if __name__ == "__main__":
     )
 
     model = WaveMlp(13 * 1541, 2)
-    if args.input_path is not None:
-        model.load_state_dict(torch.load(args.input_path))
-
-    loss_fn = torch.nn.MSELoss(reduction="sum")
     optimizer = torch.optim.Adam(model.parameters(), lr=args.learning_rate)
+    loss_fn = torch.nn.MSELoss(reduction="sum")
+
+    if args.input_path is not None:
+        checkpoint = torch.load(args.input_path)
+        model.load_state_dict(checkpoint["model_state_dict"])
+        optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
 
     test_metrics = test(dataloader=test_dataloader, model=model, loss_fn=loss_fn)
     print("Testing metrics:", test_metrics, end="\n\n")
@@ -54,4 +56,8 @@ if __name__ == "__main__":
     train(train_dataloader, test_dataloader, model, args.epochs, loss_fn, optimizer)
 
     if args.output_path is not None:
-        torch.save(model.state_dict(), args.output_path)
+        checkpoint = {
+            "model_state_dict": model.state_dict(),
+            "optimizer_state_dict": optimizer.state_dict(),
+        }
+        torch.save(checkpoint, args.output_path)
