@@ -6,22 +6,13 @@ from src.data.dataset import WaveDataset
 from src.data.split import split_dataset
 
 from src.models.mlp import WaveMlp
+from src.models.stft import Stft
 from src.train_test import train, test
 
 
-def spectrogram(wave: torch.Tensor):
-    fourier = torch.stft(
-        wave,
-        n_fft=64,
-        window=torch.hann_window(64),
-        return_complex=True,
-        normalized=False,
-    )
-    return torch.view_as_real(fourier)
-
-
 def plot(wave: torch.Tensor):
-    spect = spectrogram(wave)
+    stft_module = Stft()
+    spect = stft_module(wave)
 
     app = dash.Dash()
     app.layout = [
