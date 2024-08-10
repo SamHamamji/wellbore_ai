@@ -8,8 +8,8 @@ from src.data.dataset import WaveDataset
 def spectrogram(wave: torch.Tensor):
     fourier = torch.stft(
         wave,
-        n_fft=128,
-        window=torch.hann_window(128),
+        n_fft=64,
+        window=torch.hann_window(64),
         return_complex=True,
         normalized=False,
     )
@@ -35,14 +35,12 @@ def plot(wave: torch.Tensor):
 
 
 if __name__ == "__main__":
-    ds = WaveDataset("dataset/ISO Wr")
+    ds = WaveDataset("dataset/ISO Wr", target_length=1541)
     dataloader = torch.utils.data.DataLoader(ds, batch_size=1)
 
     x, y = ds[0]
 
     for x, y in ds:
-        if x.shape[1] == 1541:
-            continue
         print(x.shape)
         print(spectrogram(x).shape)
         plot(x)

@@ -9,8 +9,10 @@ class WaveDataset(torch.utils.data.Dataset):
     def __init__(
         self,
         data_dir: str,
+        target_length: int | None = None,
     ):
         self.data_dir = data_dir
+        self.target_length = target_length
 
         self.files = list(
             map(lambda file: os.path.join(data_dir, file), os.listdir(data_dir))
@@ -26,5 +28,8 @@ class WaveDataset(torch.utils.data.Dataset):
 
         wave = torch.from_numpy(data["wavearray_param"]).T
         target = torch.Tensor((data["vs_r"].item(), data["vp_r"].item()))
+
+        if self.target_length is not None:
+            wave = wave[..., : self.target_length]
 
         return (wave, target)
