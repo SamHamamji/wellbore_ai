@@ -1,44 +1,57 @@
+import argparse
+
+import numpy as np
 import torch.utils.data
 
 from src.data.dataset import WaveDataset
 from src.data.split import split_dataset
-
 from src.models.mlp import WaveMlp
 from src.train_test import train, test
 
 
+parser = argparse.ArgumentParser()
+
+parser.add_argument("--data_dir", type=str, required=True)
+parser.add_argument("--learning_rate", type=float, default=0.001)
+parser.add_argument("--epochs", type=int, required=True)
+parser.add_argument("--batch_size", type=int, default=1)
+parser.add_argument("--input_path", type=str, default=None)
+parser.add_argument("--output_path", type=str, default=None)
+parser.add_argument("--seed", type=int, default=0)
+
+
 if __name__ == "__main__":
+    args = parser.parse_args()
+
+    np.random.seed(args.seed)
+    torch.manual_seed(args.seed)
+
     ds = WaveDataset(
-        "dataset/ISO Wr",
+        args.data_dir,
         dims_to_flatten=(-2, -1),
         target_length=1541,
         dtype=torch.float32,
     )
-    dataloader = torch.utils.data.DataLoader(ds, batch_size=16)
-
     train_dataloader, test_dataloader, val_dataloader = (
         torch.utils.data.DataLoader(
             ds_split,
-            batch_size=32,
-            drop_last=False,
+            batch_size=args.batch_size,
             num_workers=6,
         )
         for ds_split in split_dataset(ds, torch.ones(len(ds)), (0.7, 0.2, 0.1))
     )
 
     model = WaveMlp(13 * 1541, 2)
+    if args.input_path is not None:
+        model.load_state_dict(torch.load(args.input_path))
 
     loss_fn = torch.nn.MSELoss(reduction="sum")
-    optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
+    optimizer = torch.optim.Adam(model.parameters(), lr=args.learning_rate)
 
     test_metrics = test(dataloader=test_dataloader, model=model, loss_fn=loss_fn)
     print("Testing metrics:", test_metrics, end="\n\n")
 
-    train(
-        train_dataloader,
-        test_dataloader,
-        model,
-        10,
-        loss_fn,
-        optimizer,
-    )
+    train(train_dataloader, test_dataloader, model, args.epochs, loss_fn, optimizer)
+
+    if args.output_path is not None:
+        torch.save(model.state_dict(), args.output_path)
