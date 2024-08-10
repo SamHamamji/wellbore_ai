@@ -3,6 +3,7 @@ import dash
 import plotly.express as px
 
 from src.data.dataset import WaveDataset
+from src.data.split import split_dataset
 
 
 def spectrogram(wave: torch.Tensor):
@@ -36,11 +37,12 @@ def plot(wave: torch.Tensor):
 
 if __name__ == "__main__":
     ds = WaveDataset("dataset/ISO Wr", target_length=1541)
-    dataloader = torch.utils.data.DataLoader(ds, batch_size=1)
+    dataloader = torch.utils.data.DataLoader(ds, batch_size=16)
 
-    x, y = ds[0]
-
-    for x, y in ds:
-        print(x.shape)
-        print(spectrogram(x).shape)
-        plot(x)
+    train_dataloader, test_dataloader, val_dataloader = (
+        torch.utils.data.DataLoader(
+            ds_split,
+            batch_size=16,
+        )
+        for ds_split in split_dataset(ds, torch.ones(len(ds)), (0.7, 0.2, 0.1))
+    )
