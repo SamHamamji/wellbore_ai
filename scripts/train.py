@@ -1,32 +1,10 @@
 import torch.utils.data
-import dash
-import plotly.express as px
 
 from src.data.dataset import WaveDataset
 from src.data.split import split_dataset
 
 from src.models.mlp import WaveMlp
-from src.models.stft import Stft
 from src.train_test import train, test
-
-
-def plot(wave: torch.Tensor):
-    stft_module = Stft()
-    spect = stft_module(wave)
-
-    app = dash.Dash()
-    app.layout = [
-        dash.html.Div(
-            [
-                dash.html.H1(f"Receiver {index}"),
-                dash.dcc.Graph(figure=px.imshow(spect[index, :, :, 0])),
-                dash.dcc.Graph(figure=px.imshow(spect[index, :, :, 1])),
-                dash.dcc.Graph(figure=px.line(y=wave[index])),
-            ]
-        )
-        for index in [1, 5, 9, 13]
-    ]
-    app.run(debug=True)
 
 
 if __name__ == "__main__":
@@ -54,7 +32,7 @@ if __name__ == "__main__":
     optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
 
     test_metrics = test(dataloader=test_dataloader, model=model, loss_fn=loss_fn)
-    print("Testing metrics:", test_metrics)
+    print("Testing metrics:", test_metrics, end="\n\n")
 
     train(
         train_dataloader,

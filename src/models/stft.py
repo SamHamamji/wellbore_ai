@@ -2,14 +2,15 @@ import torch
 
 
 class Stft(torch.nn.Module):
-    def __init__(self):
+    def __init__(self, n_fft: int):
+        self.n_fft = n_fft
         super().__init__()
 
     def forward(self, wave: torch.Tensor):
         fourier = torch.stft(
             wave,
-            n_fft=64,
-            window=torch.hann_window(64),
+            n_fft=self.n_fft,
+            window=torch.hann_window(self.n_fft),
             return_complex=True,
             normalized=False,
         )
