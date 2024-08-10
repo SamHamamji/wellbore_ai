@@ -6,6 +6,7 @@ import torch.utils.data
 from src.data.dataset import WaveDataset
 from src.data.split import split_dataset
 from src.models.mlp import WaveMlp
+from src.models.cnn import Wave2dCnn
 from src.train_test import train, test
 
 
@@ -43,7 +44,7 @@ if __name__ == "__main__":
 
     x_shape, y_shape = map(lambda t: t.shape, ds[0])
 
-    model = WaveMlp(x_shape, y_shape)
+    model = Wave2dCnn(x_shape, y_shape)
     optimizer = torch.optim.Adam(model.parameters(), lr=args.learning_rate)
     loss_fn = torch.nn.MSELoss(reduction="sum")
 
