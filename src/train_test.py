@@ -12,6 +12,9 @@ def train_single_epoch(
 ):
     batch_num = len(dataloader)
     batch_len = len(str(batch_num)) + 1
+    total_loss = torch.Tensor([0.0])
+    sample_num: int = 0
+
     model.train()
     start_time = time.time()
 
@@ -24,11 +27,17 @@ def train_single_epoch(
         optimizer.step()
 
         delay = time.time() - start_time
+        sample_num += x_batch.shape[0]
+        total_loss += loss
 
         print(
-            f"\rloss: {loss:<7f} [{i+1:{batch_len}d} / {batch_num:<{batch_len}d}] {delay:4f}s",
+            f"\rbatch loss: {loss:<7f} [{i+1:{batch_len}d} / {batch_num:<{batch_len}d}] {delay:4f}s",
             end="",
         )
+
+    return dict(
+        avg_loss=total_loss.item() / sample_num,
+    )
 
 
 def train(
@@ -53,12 +62,11 @@ def train(
     for epoch in range(epochs):
         initial_time = time.time()
         print_epoch_paragraph(0, "Training...")
-        train_single_epoch(train_dataloader, model, loss_fn, optimizer)
+        train_metrics = train_single_epoch(train_dataloader, model, loss_fn, optimizer)
 
         training_time = time.time() - initial_time
         print_epoch_paragraph(2, f"{training_time:.2f}s", "Testing...")
 
-        train_metrics = test(train_dataloader, model, loss_fn)
         test_metrics = test(test_dataloader, model, loss_fn)
 
         testing_time = time.time() - initial_time - training_time
