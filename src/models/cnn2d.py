@@ -1,7 +1,7 @@
 import torch
 
 
-class Wave2dCnn(torch.nn.Sequential):
+class WaveCnn2d(torch.nn.Sequential):
     def __init__(self, input_shape: torch.Size, output_shape: torch.Size):
         kernel_size = (3, 9)
         padding = (1, 0)
