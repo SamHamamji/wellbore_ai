@@ -3,28 +3,35 @@ import torch
 
 class Wave2dCnn(torch.nn.Sequential):
     def __init__(self, input_shape: torch.Size, output_shape: torch.Size):
-        kernel_sizes = [(3, 9), (3, 9), (3, 9)]
-        padding = [(2, 0), (2, 0), (2, 0)]
-        strides = [1, 1, 1, 1]
-        channels = [1, 8, 16, 32, 64]
+        kernel_size = (3, 9)
+        padding = (1, 0)
 
         conv_layers = [
             torch.nn.Sequential(
-                torch.nn.Conv2d(
-                    channels[i],
-                    channels[i + 1],
-                    (kernel_sizes[i]),
-                    strides[i],
-                    padding[i],
-                ),
+                torch.nn.Conv2d(1, 4, kernel_size, 1, padding),
                 torch.nn.ReLU(),
-                torch.nn.MaxPool2d((kernel_sizes[i]), 2),
-            )
-            for i in range(len(kernel_sizes))
+                torch.nn.Conv2d(4, 4, kernel_size, 1, padding),
+                torch.nn.ReLU(),
+                torch.nn.Conv2d(4, 4, kernel_size, 1, padding),
+                torch.nn.ReLU(),
+                torch.nn.Conv2d(4, 4, kernel_size, 1, padding),
+                torch.nn.ReLU(),
+                torch.nn.MaxPool2d((2, 2), 2),
+            ),
+            torch.nn.Sequential(
+                torch.nn.Conv2d(4, 8, kernel_size, 1, padding),
+                torch.nn.ReLU(),
+                torch.nn.MaxPool2d((2, 2), 2),
+            ),
+            torch.nn.Sequential(
+                torch.nn.Conv2d(8, 16, kernel_size, 1, padding),
+                torch.nn.ReLU(),
+                torch.nn.MaxPool2d((2, 2), 2),
+            ),
         ]
 
         linear_layers = [
-            torch.nn.Linear(11456, 128),
+            torch.nn.Linear(2912, 128),
             torch.nn.ReLU(),
             torch.nn.Linear(128, output_shape.numel()),
         ]
