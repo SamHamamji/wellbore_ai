@@ -5,7 +5,7 @@ import torch.utils.data
 
 from src.data.dataset import WaveDataset
 from src.data.split import split_dataset
-from src.models import WaveCnn3d, Stft
+from src.models import WaveCnn3d, Stft, AbsoluteRelativeError
 from src.train_test import train, test
 
 
@@ -47,7 +47,7 @@ if __name__ == "__main__":
 
     model = WaveCnn3d(x_shape, y_shape)
     optimizer = torch.optim.Adam(model.parameters(), lr=args.learning_rate)
-    loss_fn = torch.nn.MSELoss(reduction="sum")
+    loss_fn = AbsoluteRelativeError(reduction="sum")
 
     if args.input_path is not None:
         checkpoint = torch.load(args.input_path, weights_only=True)
