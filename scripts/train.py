@@ -50,7 +50,7 @@ if __name__ == "__main__":
     loss_fn = torch.nn.MSELoss(reduction="sum")
 
     if args.input_path is not None:
-        checkpoint = torch.load(args.input_path)
+        checkpoint = torch.load(args.input_path, weights_only=True)
         model.load_state_dict(checkpoint["model_state_dict"])
         optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
 
