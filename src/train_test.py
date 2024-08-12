@@ -1,13 +1,12 @@
 import time
 import torch
 import torch.utils.data
-import torch.nn as nn
 
 
 def train_single_epoch(
     dataloader: torch.utils.data.DataLoader[tuple[torch.Tensor, torch.Tensor]],
-    model: nn.Module,
-    loss_fn: nn.Module,
+    model: torch.nn.Module,
+    loss_fn: torch.nn.Module,
     optimizer: torch.optim.Optimizer,
 ):
     batch_num = len(dataloader)
@@ -31,8 +30,8 @@ def train_single_epoch(
         total_loss += loss
 
         print(
-            f"\rbatch loss: {loss:<7f} [{i+1:{batch_len}d} / {batch_num:<{batch_len}d}] {delay:4f}s",
-            end="",
+            f"batch loss: {loss:<7f} [{i+1:{batch_len}d} / {batch_num:<{batch_len}d}] {delay:4f}s",
+            end="\r",
         )
 
     return dict(
@@ -43,9 +42,9 @@ def train_single_epoch(
 def train(
     train_dataloader: torch.utils.data.DataLoader[tuple[torch.Tensor, torch.Tensor]],
     test_dataloader: torch.utils.data.DataLoader[tuple[torch.Tensor, torch.Tensor]],
-    model: nn.Module,
+    model: torch.nn.Module,
     epochs: int,
-    loss_fn: nn.Module,
+    loss_fn: torch.nn.Module,
     optimizer: torch.optim.Optimizer,
 ):
     def clear_lines(n: int):
@@ -81,8 +80,8 @@ def train(
 
 def test(
     dataloader: torch.utils.data.DataLoader[tuple[torch.Tensor, torch.Tensor]],
-    model: nn.Module,
-    loss_fn: nn.Module,
+    model: torch.nn.Module,
+    loss_fn: torch.nn.Module,
 ):
     model.eval()
     sample_num: int = 0
