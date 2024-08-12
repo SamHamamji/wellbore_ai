@@ -2,6 +2,7 @@ import argparse
 
 import numpy as np
 import torch.utils.data
+import lightning as L
 
 from src.data.dataset import WaveDataset
 from src.data.split import split_dataset
@@ -19,7 +20,33 @@ parser.add_argument("--batch_size", type=int, default=1)
 parser.add_argument("--dataloader_workers", type=int, default=0)
 parser.add_argument("--input_path", type=str, default=None)
 parser.add_argument("--output_path", type=str, default=None)
+parser.add_argument("--splits", type=float, nargs="+")
 parser.add_argument("--seed", type=int, default=0)
+
+
+class LitModel(L.LightningModule):
+    def __init__(
+        self,
+        model: torch.nn.Module,
+        loss_fn: torch.nn.Module,
+        optimizer: torch.optim.Optimizer,
+    ):
+        super().__init__()
+        self.model = model
+        self.loss_fn = loss_fn
+        self.optimizer = optimizer
+
+    def training_step(self, batch: tuple[torch.Tensor, torch.Tensor], batch_idx: int):
+        x, y = batch
+        pred = self.model(x)
+        loss = self.loss_fn(pred, y)
+
+        self.log("train_loss", loss, on_step=True, on_epoch=True, prog_bar=True)
+
+        return loss
+
+    def configure_optimizers(self):
+        return self.optimizer
 
 
 if __name__ == "__main__":
@@ -34,13 +61,13 @@ if __name__ == "__main__":
         dtype=torch.float32,
         transform=Stft(64),
     )
-    train_dataloader, test_dataloader, val_dataloader = (
+    train_dataloader, val_dataloader, test_dataloader = (
         torch.utils.data.DataLoader(
             ds_split,
             batch_size=args.batch_size,
             num_workers=args.dataloader_workers,
         )
-        for ds_split in split_dataset(ds, torch.ones(len(ds)), (0.7, 0.2, 0.1))
+        for ds_split in split_dataset(ds, torch.ones(len(ds)), args.splits)
     )
 
     x_shape, y_shape = map(lambda t: t.shape, ds[0])
@@ -54,10 +81,14 @@ if __name__ == "__main__":
         model.load_state_dict(checkpoint["model_state_dict"])
         optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
 
-    test_metrics = test(dataloader=test_dataloader, model=model, loss_fn=loss_fn)
-    print("Testing metrics:", test_metrics, end="\n\n")
+    lit_model = LitModel(model, loss_fn, optimizer)
 
-    train(train_dataloader, test_dataloader, model, args.epochs, loss_fn, optimizer)
+    trainer = L.Trainer(max_epochs=args.epochs, val_check_interval=0.1)
+    trainer.fit(
+        model=lit_model,
+        train_dataloaders=train_dataloader,
+        val_dataloaders=val_dataloader,
+    )
 
     if args.output_path is not None:
         checkpoint = {
