@@ -4,4 +4,3 @@ disable=
     C0115, # missing-class-docstring
     C0116, # missing-function-docstring
     W0621, # redefined-outer-name
-generated-members=cv2
