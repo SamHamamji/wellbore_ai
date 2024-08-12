@@ -47,8 +47,7 @@ if __name__ == "__main__":
             batch_size=args.batch_size,
             num_workers=args.dataloader_workers,
         )
-        for ds_split in split_dataset(ds, torch.ones(len(ds)), (0.7, 0.2, 0.1))
-    )
+        for ds_split in split_dataset(ds, torch.ones(len(ds)), args.splits)
 
     x_shape, y_shape = map(lambda t: t.shape, ds[0])
 
