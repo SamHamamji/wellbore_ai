@@ -3,7 +3,7 @@ import dash
 import plotly.express as px
 
 from src.data.dataset import WaveDataset
-from src.models import FftLayer
+from src.layers import FftLayer
 
 
 def plot(wave: torch.Tensor):

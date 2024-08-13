@@ -5,7 +5,8 @@ import torch.utils.data
 import plotly.express as px
 
 from src.data.dataset import WaveDataset
-from src.models import WaveCnn3d, FftLayer
+from src.models import WaveCnn3d
+from src.layers import FftLayer
 
 
 parser = argparse.ArgumentParser()
