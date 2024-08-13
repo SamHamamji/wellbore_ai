@@ -11,17 +11,24 @@ from src.train_test import train, test
 
 
 parser = argparse.ArgumentParser()
-
-parser.add_argument("--data_dir", type=str, required=True)
-parser.add_argument("--learning_rate", type=float, default=0.001)
-parser.add_argument("--epochs", type=int, required=True)
-parser.add_argument("--batch_size", type=int, default=1)
-parser.add_argument("--dataloader_workers", type=int, default=0)
-parser.add_argument("--model_type", type=str, required=True, choices=models.keys())
-parser.add_argument("--input_path", type=str, default=None)
-parser.add_argument("--output_path", type=str, default=None)
-parser.add_argument("--splits", type=float, nargs="+", default=(0.7, 0.2, 0.1))
 parser.add_argument("--seed", type=int, default=0)
+
+path_args = parser.add_argument_group("Paths")
+path_args.add_argument("--data_dir", type=str, required=True)
+path_args.add_argument("--input_path", type=str, default=None)
+path_args.add_argument("--output_path", type=str, default=None)
+
+training_args = parser.add_argument_group("Training")
+training_args.add_argument(
+    "--model_type", type=str, required=True, choices=models.keys()
+)
+training_args.add_argument("--epochs", type=int, required=True)
+training_args.add_argument("--learning_rate", type=float, default=0.001)
+
+data_args = parser.add_argument_group("Data Processing")
+data_args.add_argument("--batch_size", type=int, default=1)
+data_args.add_argument("--dataloader_workers", type=int, default=0)
+data_args.add_argument("--splits", type=float, nargs="+", default=(0.7, 0.2, 0.1))
 
 
 if __name__ == "__main__":
