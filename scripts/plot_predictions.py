@@ -5,7 +5,7 @@ import torch.utils.data
 import plotly.express as px
 
 from src.data.dataset import WaveDataset
-from src.models import WaveCnn3d, Stft
+from src.models import WaveCnn3d, FftLayer
 
 
 parser = argparse.ArgumentParser()
@@ -25,7 +25,7 @@ if __name__ == "__main__":
         args.data_dir,
         target_length=1541,
         dtype=torch.float32,
-        transform=Stft(64),
+        transform=FftLayer(),
     )
     loader = torch.utils.data.DataLoader(ds, num_workers=8, batch_size=len(ds) // 8)
 

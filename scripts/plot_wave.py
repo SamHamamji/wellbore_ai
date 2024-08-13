@@ -3,20 +3,23 @@ import dash
 import plotly.express as px
 
 from src.data.dataset import WaveDataset
-from src.models.stft import Stft
+from src.models import FftLayer
 
 
 def plot(wave: torch.Tensor):
-    stft_module = Stft(64)
-    spect = stft_module(wave)
+    fft = FftLayer()
+    spect = fft(wave)
+
+    # pylint: disable=not-callable
+    frequencies = torch.fft.rfftfreq(wave.shape[-1], d=1.0)
 
     app = dash.Dash()
     app.layout = [
         dash.html.Div(
             [
                 dash.html.H1(f"Receiver {index}"),
-                dash.dcc.Graph(figure=px.imshow(spect[index, :, :, 0])),
-                dash.dcc.Graph(figure=px.imshow(spect[index, :, :, 1])),
+                dash.dcc.Graph(figure=px.line(x=frequencies, y=spect[index, :, 0])),
+                dash.dcc.Graph(figure=px.line(x=frequencies, y=spect[index, :, 1])),
                 dash.dcc.Graph(figure=px.line(y=wave[index])),
             ]
         )
