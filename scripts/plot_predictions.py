@@ -43,12 +43,12 @@ if __name__ == "__main__":
 
     with torch.no_grad():
         pred = model(x)
-    print(pred)
 
-    target = 0
-
-    fig = px.scatter(
-        x=y[..., target], y=pred[..., target], labels={"x": "y", "y": "pred"}
-    )
-    fig.add_scatter(x=y[..., target], y=y[..., target])
-    fig.show()
+    for target in range(x.shape[-1]):
+        fig = px.scatter(
+            x=y[..., target],
+            y=pred[..., target],
+            labels={"x": "y", "y": f"pred {target}"},
+        )
+        fig.add_scatter(x=y[..., target], y=y[..., target])
+        fig.show()
