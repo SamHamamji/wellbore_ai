@@ -7,4 +7,4 @@ class FftLayer(torch.nn.Module):
 
     def forward(self, wave: torch.Tensor):
         ft = torch.fft.rfft(wave, dim=-1)  # pylint: disable=not-callable
-        return torch.view_as_real(ft)
+        return torch.view_as_real(ft).movedim(-1, -2)

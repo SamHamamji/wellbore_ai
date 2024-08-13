@@ -5,7 +5,8 @@ import torch.utils.data
 
 from src.data.dataset import WaveDataset
 from src.data.split import split_dataset
-from src.models import WaveCnn3d, FftLayer
+from src.models import models
+from src.layers import FftLayer
 from src.train_test import train, test
 
 
@@ -16,6 +17,7 @@ parser.add_argument("--learning_rate", type=float, default=0.001)
 parser.add_argument("--epochs", type=int, required=True)
 parser.add_argument("--batch_size", type=int, default=1)
 parser.add_argument("--dataloader_workers", type=int, default=0)
+parser.add_argument("--model_type", type=str, required=True, choices=models.keys())
 parser.add_argument("--input_path", type=str, default=None)
 parser.add_argument("--output_path", type=str, default=None)
 parser.add_argument("--splits", type=float, nargs="+", default=(0.7, 0.2, 0.1))
@@ -45,7 +47,7 @@ if __name__ == "__main__":
 
     x_shape, y_shape = map(lambda t: t.shape, ds[0])
 
-    model = WaveCnn3d(x_shape, y_shape)
+    model = models[args.model_type](x_shape, y_shape)
     optimizer = torch.optim.Adam(model.parameters(), lr=args.learning_rate)
     loss_fn = torch.nn.MSELoss(reduction="sum")
 
