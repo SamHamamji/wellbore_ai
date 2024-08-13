@@ -9,14 +9,12 @@ class WaveDataset(torch.utils.data.Dataset):
     def __init__(
         self,
         data_dir: str,
-        dims_to_flatten: tuple[int, int] | None = None,
         target_length: int | None = None,
         transform: torch.nn.Module | None = None,
         dtype: torch.dtype | None = None,
     ):
         self.data_dir = data_dir
         self.target_length = target_length
-        self.dims_to_flatten = dims_to_flatten
         self.transform = transform
         self.dtype = dtype
 
@@ -44,8 +42,5 @@ class WaveDataset(torch.utils.data.Dataset):
 
         if self.transform is not None:
             wave: torch.Tensor = self.transform(wave)
-
-        if self.dims_to_flatten is not None:
-            wave = wave.flatten(*self.dims_to_flatten)
 
         return (wave, target)
