@@ -30,8 +30,6 @@ if __name__ == "__main__":
     loader = torch.utils.data.DataLoader(ds, num_workers=8, batch_size=len(ds) // 8)
 
     x, y = next(iter(loader))
-    x: torch.Tensor = x.detach()
-    y: torch.Tensor = y.detach()
 
     model = WaveCnn3d(x.shape[1:], y.shape[1:])
 
@@ -43,12 +41,14 @@ if __name__ == "__main__":
 
     model.eval()
 
-    pred = model(x)
+    with torch.no_grad():
+        pred = model(x)
+    print(pred)
 
     target = 0
 
     fig = px.scatter(
-        x=y[..., target], y=pred.detach()[..., target], labels={"x": "y", "y": "pred"}
+        x=y[..., target], y=pred[..., target], labels={"x": "y", "y": "pred"}
     )
     fig.add_scatter(x=y[..., target], y=y[..., target])
     fig.show()

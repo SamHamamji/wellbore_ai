@@ -5,7 +5,6 @@ class Stft(torch.nn.Module):
     def __init__(self, n_fft: int):
         self.n_fft = n_fft
         super().__init__()
-        self.eval()
 
     def forward(self, wave: torch.Tensor):
         fourier = torch.stft(

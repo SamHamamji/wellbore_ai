@@ -7,7 +7,6 @@ class AbsoluteRelativeError(torch.nn.Module):
     def __init__(self, reduction: typing.Literal["mean", "sum"] | None = None) -> None:
         self.reduction = reduction
         super().__init__()
-        self.eval()
 
     def forward(self, pred: torch.Tensor, y_true: torch.Tensor):
         mare = torch.abs(pred - y_true) / y_true
