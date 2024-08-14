@@ -28,6 +28,18 @@ data_args.add_argument("--dataloader_workers", type=int, default=0)
 data_args.add_argument("--splits", type=float, nargs="+", default=(0.7, 0.2, 0.1))
 
 
+def save_checkpoint(
+    model: torch.nn.Module, optimizer: torch.optim.Optimizer, path: str
+):
+    new_checkpoint = {
+        "model_state_dict": model.state_dict(),
+        "optimizer_state_dict": optimizer.state_dict(),
+        "model_type": type(model),
+    }
+    torch.save(new_checkpoint, path)
+    print(f"\nSaved checkpoint to {path}\n")
+
+
 if __name__ == "__main__":
     args = parser.parse_args()
 
@@ -72,16 +84,21 @@ if __name__ == "__main__":
     if checkpoint:
         model.load_state_dict(checkpoint["model_state_dict"])
         optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
+    del checkpoint
 
     test_metrics = test(dataloader=test_loader, model=model, loss_fn=loss_fn)
     print("Testing metrics:", test_metrics, end="\n\n")
 
-    train(train_loader, test_loader, model, args.epochs, loss_fn, optimizer)
+    interrupt = False
+    try:
+        train(train_loader, test_loader, model, args.epochs, loss_fn, optimizer)
+    except KeyboardInterrupt:
+        interrupt = True
 
     if args.output_path is not None:
-        checkpoint = {
-            "model_state_dict": model.state_dict(),
-            "optimizer_state_dict": optimizer.state_dict(),
-            "model_type": model_type,
-        }
-        torch.save(checkpoint, args.output_path)
+        if interrupt and input("Interrupted, save model? [y/N] ").lower() not in [
+            "y",
+            "yes",
+        ]:
+            exit()
+        save_checkpoint(model, optimizer, args.output_path)
