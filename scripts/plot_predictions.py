@@ -40,10 +40,11 @@ if __name__ == "__main__":
     model = model_type(x.shape[1:], y.shape[1:])
     model.load_state_dict(checkpoint["model_state_dict"])
 
+    model.eval()
     with torch.no_grad():
         pred = model(x)
 
-    for target in range(x.shape[-1]):
+    for target in range(y.shape[-1]):
         fig = px.scatter(
             x=y[..., target],
             y=pred[..., target],

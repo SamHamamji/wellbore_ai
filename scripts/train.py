@@ -43,9 +43,6 @@ def save_checkpoint(
 if __name__ == "__main__":
     args = parser.parse_args()
 
-    np.random.seed(args.seed)
-    torch.manual_seed(args.seed)
-
     if (args.input_path is None) == (args.model_type is None):
         parser.error("Either --input_path or --model_type must be specified")
     elif args.input_path is not None:
@@ -54,6 +51,9 @@ if __name__ == "__main__":
     else:
         checkpoint = None
         model_type = models[args.model_type]
+
+    np.random.seed(args.seed)
+    torch.manual_seed(args.seed)
 
     ds = WaveDataset(
         args.data_dir,

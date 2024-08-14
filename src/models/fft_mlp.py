@@ -4,7 +4,10 @@ from src.layers.fft import FftLayer
 
 
 class FftMlp(torch.nn.Sequential):
-    dataset_transform = FftLayer(time_dim=-1, complex_dim=-1)
+    dataset_transform = torch.nn.Sequential(
+        torch.nn.LazyBatchNorm1d(),
+        FftLayer(time_dim=-1, complex_dim=-1),
+    )
 
     def __init__(self, input_shape: torch.Size, output_shape: torch.Size):
         layers = [

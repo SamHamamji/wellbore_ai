@@ -6,7 +6,7 @@ from src.data.dataset import WaveDataset
 from src.layers import FftLayer
 
 
-def plot(wave: torch.Tensor):
+def plot_fft(wave: torch.Tensor):
     fft = FftLayer()
     spect = fft(wave)
 
@@ -29,8 +29,12 @@ def plot(wave: torch.Tensor):
 
 
 if __name__ == "__main__":
-    ds = WaveDataset("dataset/ISO Wr")
+    ds = WaveDataset(
+        "dataset/ISO Wr",
+        dtype=torch.float32,
+        target_length=1541,
+    )
 
     x, y = ds[0]
 
-    plot(x)
+    plot_fft(x)

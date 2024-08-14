@@ -41,6 +41,7 @@ class WaveDataset(torch.utils.data.Dataset):
             wave = wave[..., : self.target_length]
 
         if self.transform is not None:
-            wave: torch.Tensor = self.transform(wave)
+            with torch.no_grad():
+                wave: torch.Tensor = self.transform(wave)
 
         return (wave, target)
