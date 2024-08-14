@@ -29,12 +29,13 @@ data_args.add_argument("--splits", type=float, nargs="+", default=(0.7, 0.2, 0.1
 
 
 def save_checkpoint(
-    model: torch.nn.Module, optimizer: torch.optim.Optimizer, path: str
+    model: torch.nn.Module, optimizer: torch.optim.Optimizer, path: str, epoch: int
 ):
     new_checkpoint = {
         "model_state_dict": model.state_dict(),
         "optimizer_state_dict": optimizer.state_dict(),
         "model_type": type(model),
+        "epoch": epoch,
     }
     torch.save(new_checkpoint, path)
     print(f"\nSaved checkpoint to {path}\n")
@@ -48,9 +49,11 @@ if __name__ == "__main__":
     elif args.input_path is not None:
         checkpoint = torch.load(args.input_path, weights_only=False)
         model_type: type[torch.nn.Module] = checkpoint["model_type"]
+        initial_epoch = checkpoint["epoch"]
     else:
         checkpoint = None
         model_type = models[args.model_type]
+        initial_epoch = 0
 
     np.random.seed(args.seed)
     torch.manual_seed(args.seed)
@@ -89,16 +92,20 @@ if __name__ == "__main__":
     test_metrics = test(dataloader=test_loader, model=model, loss_fn=loss_fn)
     print("Testing metrics:", test_metrics, end="\n\n")
 
-    interrupt = False
-    try:
-        train(train_loader, test_loader, model, args.epochs, loss_fn, optimizer)
-    except KeyboardInterrupt:
-        interrupt = True
+    epoch = train(
+        train_loader,
+        test_loader,
+        model,
+        (initial_epoch, initial_epoch + args.epochs),
+        loss_fn,
+        optimizer,
+    )
+    interrupted: bool = epoch < initial_epoch + args.epochs
 
     if args.output_path is not None:
-        if interrupt and input("Interrupted, save model? [y/N] ").lower() not in [
+        if interrupted and input("Interrupted, save model? [y/N] ").lower() not in [
             "y",
             "yes",
         ]:
             exit()
-        save_checkpoint(model, optimizer, args.output_path)
+        save_checkpoint(model, optimizer, args.output_path, epoch)

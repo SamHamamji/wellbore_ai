@@ -43,7 +43,7 @@ def train(
     train_dataloader: torch.utils.data.DataLoader[tuple[torch.Tensor, torch.Tensor]],
     test_dataloader: torch.utils.data.DataLoader[tuple[torch.Tensor, torch.Tensor]],
     model: torch.nn.Module,
-    epochs: int,
+    epochs: tuple[int, int],
     loss_fn: torch.nn.Module,
     optimizer: torch.optim.Optimizer,
 ):
@@ -58,24 +58,31 @@ def train(
         for content in contents:
             print(content)
 
-    for epoch in range(epochs):
-        initial_time = time.time()
-        print_epoch_paragraph(0, "Training...")
-        train_metrics = train_single_epoch(train_dataloader, model, loss_fn, optimizer)
+    try:
+        for epoch in range(epochs[0], epochs[1]):
+            initial_time = time.time()
+            print_epoch_paragraph(0, "Training...")
+            train_metrics = train_single_epoch(
+                train_dataloader, model, loss_fn, optimizer
+            )
 
-        training_time = time.time() - initial_time
-        print_epoch_paragraph(2, f"{training_time:.2f}s", "Testing...")
+            training_time = time.time() - initial_time
+            print_epoch_paragraph(2, f"{training_time:.2f}s", "Testing...")
 
-        test_metrics = test(test_dataloader, model, loss_fn)
+            test_metrics = test(test_dataloader, model, loss_fn)
 
-        testing_time = time.time() - initial_time - training_time
-        print_epoch_paragraph(
-            3,
-            f"{training_time:.2f}s | {testing_time:.2f}s",
-            f"Training metrics: {train_metrics}",
-            f"Testing metrics: {test_metrics}",
-        )
-        print()
+            testing_time = time.time() - initial_time - training_time
+            print_epoch_paragraph(
+                3,
+                f"{training_time:.2f}s | {testing_time:.2f}s",
+                f"Training metrics: {train_metrics}",
+                f"Testing metrics: {test_metrics}",
+            )
+            print()
+    except KeyboardInterrupt:
+        return epoch
+
+    return epoch + 1
 
 
 def test(
