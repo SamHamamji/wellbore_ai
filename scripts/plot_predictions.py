@@ -5,8 +5,6 @@ import torch.utils.data
 import plotly.express as px
 
 from src.data.dataset import WaveDataset
-from src.models import WaveCnn3d
-from src.layers import FftLayer
 
 
 parser = argparse.ArgumentParser()
@@ -22,25 +20,25 @@ if __name__ == "__main__":
     np.random.seed(args.seed)
     torch.manual_seed(args.seed)
 
+    checkpoint = torch.load(args.model_path, weights_only=False)
+    model_type: type[torch.nn.Module] = checkpoint["model_type"]
+
     ds = WaveDataset(
         args.data_dir,
         target_length=1541,
         dtype=torch.float32,
-        transform=FftLayer(),
+        transform=(
+            model_type.dataset_transform  # type: ignore
+            if hasattr(model_type, "dataset_transform")
+            else None
+        ),
     )
     loader = torch.utils.data.DataLoader(ds, num_workers=8, batch_size=len(ds) // 8)
 
     x, y = next(iter(loader))
 
-    model = WaveCnn3d(x.shape[1:], y.shape[1:])
-
-    if args.model_path is not None:
-        model_state_dict = torch.load(args.model_path, weights_only=True)[
-            "model_state_dict"
-        ]
-        model.load_state_dict(model_state_dict)
-
-    model.eval()
+    model = model_type(x.shape[1:], y.shape[1:])
+    model.load_state_dict(checkpoint["model_state_dict"])
 
     with torch.no_grad():
         pred = model(x)
