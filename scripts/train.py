@@ -6,7 +6,6 @@ import torch.utils.data
 from src.data.dataset import WaveDataset
 from src.data.split import split_dataset
 from src.models import models
-from src.layers import FftLayer
 from src.train_test import train, test
 
 
@@ -37,11 +36,18 @@ if __name__ == "__main__":
     np.random.seed(args.seed)
     torch.manual_seed(args.seed)
 
+    model_type = models[args.model_type]
+    dataset_transform = (
+        model_type.dataset_transform  # type: ignore
+        if hasattr(model_type, "dataset_transform")
+        else None
+    )
+
     ds = WaveDataset(
         args.data_dir,
         target_length=1541,
         dtype=torch.float32,
-        transform=FftLayer(),
+        transform=dataset_transform,
     )
     train_loader, test_loader, val_loader = (
         torch.utils.data.DataLoader(
@@ -53,8 +59,9 @@ if __name__ == "__main__":
     )
 
     x_shape, y_shape = map(lambda t: t.shape, ds[0])
+    print(f"Sample shapes: {x_shape=} {y_shape=}", end="\n\n")
 
-    model = models[args.model_type](x_shape, y_shape)
+    model = model_type(x_shape, y_shape)
     optimizer = torch.optim.Adam(model.parameters(), lr=args.learning_rate)
     loss_fn = torch.nn.MSELoss(reduction="sum")
 
