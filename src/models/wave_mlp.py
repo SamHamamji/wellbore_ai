@@ -2,6 +2,8 @@ import torch
 
 
 class WaveMlp(torch.nn.Sequential):
+    dataset_transform = torch.nn.LazyBatchNorm1d()
+
     def __init__(self, input_shape: torch.Size, output_shape: torch.Size):
         layers = [
             torch.nn.Flatten(-len(input_shape), -1),
