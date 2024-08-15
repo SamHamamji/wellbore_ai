@@ -1,4 +1,5 @@
 import os
+import typing
 
 import scipy
 import torch
@@ -10,6 +11,7 @@ class WaveDataset(torch.utils.data.Dataset):
         self,
         data_dir: str,
         target_length: int | None = None,
+        filter_fn: typing.Callable[[str], bool] | None = None,
         transform: torch.nn.Module | None = None,
         dtype: torch.dtype | None = None,
     ):
@@ -21,7 +23,8 @@ class WaveDataset(torch.utils.data.Dataset):
         self.files = list(
             map(lambda file: os.path.join(data_dir, file), os.listdir(data_dir))
         )
-        self.files = list(filter(lambda s: s.endswith(".mat"), self.files))
+        if filter_fn is not None:
+            self.files = list(filter(filter_fn, self.files))
 
     def __len__(self):
         return len(self.files)
