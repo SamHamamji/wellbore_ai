@@ -62,9 +62,14 @@ if __name__ == "__main__":
         args.data_dir,
         target_length=1541,
         dtype=torch.float32,
-        transform=(
-            model_type.dataset_transform  # type: ignore
-            if hasattr(model_type, "dataset_transform")
+        x_transform=(
+            model_type.dataset_x_transform  # type: ignore
+            if hasattr(model_type, "dataset_x_transform")
+            else None
+        ),
+        y_transform=(
+            model_type.dataset_y_transform  # type: ignore
+            if hasattr(model_type, "dataset_y_transform")
             else None
         ),
     )
@@ -85,7 +90,8 @@ if __name__ == "__main__":
     loss_fn = torch.nn.MSELoss(reduction="sum")
 
     if checkpoint:
-        model.load_state_dict(checkpoint["model_state_dict"])
+        model_state_dict = checkpoint["model_state_dict"]
+        model.load_state_dict(model_state_dict)
         optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
     del checkpoint
 

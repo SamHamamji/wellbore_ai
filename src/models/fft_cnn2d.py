@@ -4,7 +4,7 @@ from src.layers.fft import FftLayer
 
 
 class FftCnn2d(torch.nn.Sequential):
-    dataset_transform = torch.nn.Sequential(
+    dataset_x_transform = torch.nn.Sequential(
         torch.nn.LazyBatchNorm1d(),
         FftLayer(-1, -3),
     )

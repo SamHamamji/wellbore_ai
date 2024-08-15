@@ -27,9 +27,9 @@ if __name__ == "__main__":
         args.data_dir,
         target_length=1541,
         dtype=torch.float32,
-        transform=(
-            model_type.dataset_transform  # type: ignore
-            if hasattr(model_type, "dataset_transform")
+        x_transform=(
+            model_type.dataset_x_transform  # type: ignore
+            if hasattr(model_type, "dataset_x_transform")
             else None
         ),
     )

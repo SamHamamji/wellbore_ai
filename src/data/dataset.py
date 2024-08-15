@@ -12,12 +12,14 @@ class WaveDataset(torch.utils.data.Dataset):
         data_dir: str,
         target_length: int | None = None,
         filter_fn: typing.Callable[[str], bool] | None = None,
-        transform: torch.nn.Module | None = None,
+        x_transform: torch.nn.Module | None = None,
+        y_transform: torch.nn.Module | None = None,
         dtype: torch.dtype | None = None,
     ):
         self.data_dir = data_dir
         self.target_length = target_length
-        self.transform = transform
+        self.x_transform = x_transform
+        self.y_transform = y_transform
         self.dtype = dtype
 
         self.files = list(
@@ -43,8 +45,12 @@ class WaveDataset(torch.utils.data.Dataset):
         if self.target_length is not None:
             wave = wave[..., : self.target_length]
 
-        if self.transform is not None:
+        if self.x_transform is not None:
             with torch.no_grad():
-                wave: torch.Tensor = self.transform(wave)
+                wave: torch.Tensor = self.x_transform(wave)
+
+        if self.y_transform is not None:
+            with torch.no_grad():
+                wave: torch.Tensor = self.y_transform(wave)
 
         return (wave, target)
