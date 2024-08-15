@@ -9,6 +9,7 @@ class FftCnn2d(torch.nn.Sequential):
         FftLayer(-1, -3),
     )
 
+    # pylint: disable=W0613
     def __init__(self, input_shape: torch.Size, output_shape: torch.Size):
         kernel_size = (3, 9)
         conv_padding = (1, 0)
