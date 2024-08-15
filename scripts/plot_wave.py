@@ -6,9 +6,8 @@ from src.data.dataset import WaveDataset
 from src.layers import FftLayer
 
 
-def plot_fft(wave: torch.Tensor):
-    fft = FftLayer()
-    spect = fft(wave)
+def plot_fft(wave: torch.Tensor, transform: torch.nn.Module):
+    spect = transform(wave)
 
     # pylint: disable=not-callable
     frequencies = torch.fft.rfftfreq(wave.shape[-1], d=1.0)
@@ -17,13 +16,15 @@ def plot_fft(wave: torch.Tensor):
     app.layout = [
         dash.html.Div(
             [
-                dash.html.H1(f"Receiver {index}"),
-                dash.dcc.Graph(figure=px.line(x=frequencies, y=spect[index, :, 0])),
-                dash.dcc.Graph(figure=px.line(x=frequencies, y=spect[index, :, 1])),
-                dash.dcc.Graph(figure=px.line(y=wave[index])),
+                dash.html.H1(f"Receiver {receiver}"),
+                dash.html.H3("Raw signal"),
+                dash.dcc.Graph(figure=px.line(y=wave[receiver])),
+                dash.html.H3("Transformed signal"),
+                dash.dcc.Graph(figure=px.line(x=frequencies, y=spect[receiver, :, 0])),
+                dash.dcc.Graph(figure=px.line(x=frequencies, y=spect[receiver, :, 1])),
             ]
         )
-        for index in [0, 4, 8, 12]
+        for receiver in [0, 4, 8, 12]
     ]
     app.run(debug=True)
 
@@ -34,7 +35,8 @@ if __name__ == "__main__":
         dtype=torch.float32,
         target_length=1541,
     )
+    transform = FftLayer(time_dim=-1, complex_dim=-1, polar_decomposition=True)
 
     x, y = ds[0]
 
-    plot_fft(x)
+    plot_fft(x, transform)
