@@ -1,6 +1,6 @@
 # Custom
 dataset
-models/**
+ignore
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
