@@ -5,6 +5,7 @@ import torch.utils.data
 
 from src.data.dataset import WaveDataset
 from src.data.split import split_dataset
+from src.data.file_filter_fn import get_filter_fn_by_vs_vp
 from src.models import models
 from src.train_test import train, test
 
@@ -47,9 +48,9 @@ if __name__ == "__main__":
     if (args.input_path is None) == (args.model_type is None):
         parser.error("Either --input_path or --model_type must be specified")
     elif args.input_path is not None:
-        checkpoint = torch.load(args.input_path, weights_only=False)
-        model_type: type[torch.nn.Module] = checkpoint["model_type"]
-        initial_epoch = checkpoint["epoch"]
+        checkpoint: dict | None = torch.load(args.input_path, weights_only=False)
+        model_type: type[torch.nn.Module] = checkpoint["model_type"]  # type: ignore
+        initial_epoch: int = checkpoint["epoch"]  # type: ignore
     else:
         checkpoint = None
         model_type = models[args.model_type]
@@ -62,6 +63,7 @@ if __name__ == "__main__":
         args.data_dir,
         target_length=1541,
         dtype=torch.float32,
+        filter_fn=get_filter_fn_by_vs_vp(),
         x_transform=(
             model_type.dataset_x_transform  # type: ignore
             if hasattr(model_type, "dataset_x_transform")
@@ -89,7 +91,7 @@ if __name__ == "__main__":
     optimizer = torch.optim.Adam(model.parameters(), lr=args.learning_rate)
     loss_fn = torch.nn.MSELoss(reduction="sum")
 
-    if checkpoint:
+    if checkpoint is not None:
         model_state_dict = checkpoint["model_state_dict"]
         model.load_state_dict(model_state_dict)
         optimizer.load_state_dict(checkpoint["optimizer_state_dict"])

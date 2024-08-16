@@ -5,6 +5,7 @@ import dash
 import plotly.express as px
 
 from src.data.dataset import WaveDataset
+from src.data.file_filter_fn import get_filter_fn_by_vs_vp
 from src.layers import FftLayer
 
 
@@ -47,6 +48,7 @@ if __name__ == "__main__":
     ds = WaveDataset(
         args.data_dir,
         dtype=torch.float32,
+        filter_fn=get_filter_fn_by_vs_vp(),
         target_length=1541,
     )
     transform = FftLayer(time_dim=-1, complex_dim=-1, polar_decomposition=True)

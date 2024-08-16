@@ -5,6 +5,7 @@ import torch.utils.data
 import plotly.express as px
 
 from src.data.dataset import WaveDataset
+from src.data.file_filter_fn import get_filter_fn_by_vs_vp
 
 
 parser = argparse.ArgumentParser()
@@ -27,6 +28,7 @@ if __name__ == "__main__":
         args.data_dir,
         target_length=1541,
         dtype=torch.float32,
+        filter_fn=get_filter_fn_by_vs_vp(),
         x_transform=(
             model_type.dataset_x_transform  # type: ignore
             if hasattr(model_type, "dataset_x_transform")
