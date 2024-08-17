@@ -12,6 +12,7 @@ from src.layers import FftLayer
 parser = argparse.ArgumentParser()
 
 parser.add_argument("--data_dir", type=str, required=True)
+parser.add_argument("--polar", action="store_true")
 parser.add_argument("--sample_index", type=int, default=0)
 parser.add_argument("--seed", type=int, default=0)
 
@@ -21,6 +22,8 @@ def plot_fft(wave: torch.Tensor, transform: torch.nn.Module):
 
     # pylint: disable=not-callable
     frequencies = torch.fft.rfftfreq(wave.shape[-1], d=1.0)
+
+    print(spect.shape, frequencies.shape)
 
     app = dash.Dash()
     app.layout = [
@@ -51,10 +54,12 @@ if __name__ == "__main__":
         filter_fn=get_filter_fn_by_vs_vp(),
         target_length=1541,
     )
-    transform = FftLayer(time_dim=-1, complex_dim=-1, polar_decomposition=True)
+    transform = FftLayer(
+        time_dim=-1,
+        complex_dim=-1,
+        polar_decomposition=args.polar,
+    )
 
     x, y = ds[args.sample_index]
-
-    print(y)
 
     plot_fft(x, transform)
