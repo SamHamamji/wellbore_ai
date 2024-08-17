@@ -24,6 +24,8 @@ training_args.add_argument("--epochs", type=int, required=True)
 training_args.add_argument("--learning_rate", type=float, default=0.001)
 
 data_args = parser.add_argument_group("Data Processing")
+data_args.add_argument("--max_vs", type=float, default=float("inf"))
+data_args.add_argument("--max_vp", type=float, default=float("inf"))
 data_args.add_argument("--batch_size", type=int, default=1)
 data_args.add_argument("--dataloader_workers", type=int, default=0)
 data_args.add_argument("--splits", type=float, nargs="+", default=(0.7, 0.2, 0.1))
@@ -63,7 +65,7 @@ if __name__ == "__main__":
         args.data_dir,
         target_length=1541,
         dtype=torch.float32,
-        filter_fn=get_filter_fn_by_vs_vp(),
+        filter_fn=get_filter_fn_by_vs_vp(max_vs=args.max_vs, max_vp=args.max_vp),
         x_transform=(
             model_type.dataset_x_transform  # type: ignore
             if hasattr(model_type, "dataset_x_transform")
