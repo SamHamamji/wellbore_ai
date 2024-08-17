@@ -3,7 +3,7 @@ import torch
 
 class RMSELoss(torch.nn.Module):
     def __init__(self):
-        super(RMSELoss, self).__init__()
+        super().__init__()
         self.mse_loss = torch.nn.MSELoss(reduction="mean")
 
     def forward(self, x, y):

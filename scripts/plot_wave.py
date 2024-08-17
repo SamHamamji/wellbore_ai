@@ -6,7 +6,7 @@ import plotly.express as px
 
 from src.data.dataset import WaveDataset
 from src.data.file_filter_fn import get_filter_fn_by_vs_vp
-from src.layers import FftLayer
+from src.layers import FftLayer, SelectIndexLayer
 
 
 parser = argparse.ArgumentParser()
@@ -18,12 +18,8 @@ parser.add_argument("--seed", type=int, default=0)
 
 
 def plot_fft(wave: torch.Tensor, transform: torch.nn.Module):
-    spect = transform(wave)
-
-    # pylint: disable=not-callable
-    frequencies = torch.fft.rfftfreq(wave.shape[-1], d=1.0)
-
-    print(spect.shape, frequencies.shape)
+    with torch.no_grad():
+        spect = transform(wave)
 
     app = dash.Dash()
     app.layout = [
@@ -33,9 +29,9 @@ def plot_fft(wave: torch.Tensor, transform: torch.nn.Module):
                 dash.html.H3("Raw signal"),
                 dash.dcc.Graph(figure=px.line(y=wave[receiver])),
                 dash.html.H3("Amplitude"),
-                dash.dcc.Graph(figure=px.line(x=frequencies, y=spect[receiver, :, 0])),
+                dash.dcc.Graph(figure=px.line(y=spect[receiver, :, 0])),
                 dash.html.H3("Phase"),
-                dash.dcc.Graph(figure=px.line(x=frequencies, y=spect[receiver, :, 1])),
+                dash.dcc.Graph(figure=px.line(y=spect[receiver, :, 1])),
             ]
         )
         for receiver in [0, 4, 8, 12]
@@ -54,12 +50,11 @@ if __name__ == "__main__":
         filter_fn=get_filter_fn_by_vs_vp(),
         target_length=1541,
     )
-    transform = FftLayer(
-        time_dim=-1,
-        complex_dim=-1,
-        polar_decomposition=args.polar,
+    transform = torch.nn.Sequential(
+        torch.nn.LazyBatchNorm1d(),
+        FftLayer(-1, -1, args.polar),
+        SelectIndexLayer(-1, (slice(None), slice(200), slice(None))),
     )
-
     x, y = ds[args.sample_index]
 
     plot_fft(x, transform)

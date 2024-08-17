@@ -1,6 +1,6 @@
 import torch
 
-from src.layers.fft import FftLayer
+from src.layers import FftLayer
 
 
 class PolarFftCnn2d(torch.nn.Sequential):

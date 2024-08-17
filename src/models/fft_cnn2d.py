@@ -1,6 +1,6 @@
 import torch
 
-from src.layers.fft import FftLayer
+from src.layers import FftLayer
 
 
 class FftCnn2d(torch.nn.Sequential):
