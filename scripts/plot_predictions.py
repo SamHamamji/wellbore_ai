@@ -34,6 +34,11 @@ if __name__ == "__main__":
             if hasattr(model_type, "dataset_x_transform")
             else None
         ),
+        y_transform=(
+            model_type.dataset_y_transform  # type: ignore
+            if hasattr(model_type, "dataset_y_transform")
+            else None
+        ),
     )
     loader = torch.utils.data.DataLoader(ds, num_workers=8, batch_size=len(ds) // 8)
 
