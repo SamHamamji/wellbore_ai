@@ -14,4 +14,11 @@ models: dict[str, type[torch.nn.Module]] = {
     "wave_mlp": WaveMlp,
 }
 
-__all__ = ["FftCnn2d", "FftMlp", "PolarFftCnn2d", "WaveMlp", "models"]
+__all__ = [
+    "AmplitudeFftCnn2d",
+    "FftCnn2d",
+    "FftMlp",
+    "PolarFftCnn2d",
+    "WaveMlp",
+    "models",
+]
