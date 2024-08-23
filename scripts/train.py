@@ -3,80 +3,36 @@ import argparse
 import numpy as np
 import torch.utils.data
 
-from src.data.dataset import WaveDataset
+from src.checkpoint import update_checkpoint, load_checkpoint
 from src.data.split import split_dataset
-from src.data.file_filter_fn import get_filter_fn_by_vs_vp
-from src.models import models
 from src.train_test import train, test
 
 
 parser = argparse.ArgumentParser()
+parser.add_argument("--checkpoint_path", type=str, default=None)
 parser.add_argument("--seed", type=int, default=0)
 
-path_args = parser.add_argument_group("Paths")
-path_args.add_argument("--data_dir", type=str, required=True)
-path_args.add_argument("--input_path", type=str, default=None)
-path_args.add_argument("--output_path", type=str, default=None)
-
 training_args = parser.add_argument_group("Training")
-training_args.add_argument("--model_type", type=str, choices=models.keys())
 training_args.add_argument("--epochs", type=int, required=True)
-training_args.add_argument("--learning_rate", type=float, default=0.001)
+training_args.add_argument("--learning_rate", type=float, required=True)
 
 data_args = parser.add_argument_group("Data Processing")
-data_args.add_argument("--max_vs", type=float, default=float("inf"))
-data_args.add_argument("--max_vp", type=float, default=float("inf"))
 data_args.add_argument("--batch_size", type=int, default=1)
 data_args.add_argument("--dataloader_workers", type=int, default=0)
 data_args.add_argument("--splits", type=float, nargs="+", default=(0.7, 0.2, 0.1))
 
 
-def save_checkpoint(
-    model: torch.nn.Module, optimizer: torch.optim.Optimizer, path: str, epoch: int
-):
-    new_checkpoint = {
-        "model_state_dict": model.state_dict(),
-        "optimizer_state_dict": optimizer.state_dict(),
-        "model_type": type(model),
-        "epoch": epoch,
-    }
-    torch.save(new_checkpoint, path)
-    print(f"\nSaved checkpoint to {path}\n")
-
-
 if __name__ == "__main__":
     args = parser.parse_args()
-
-    if (args.input_path is None) == (args.model_type is None):
-        parser.error("Either --input_path or --model_type must be specified")
-    elif args.input_path is not None:
-        checkpoint: dict | None = torch.load(args.input_path, weights_only=False)
-        model_type: type[torch.nn.Module] = checkpoint["model_type"]  # type: ignore
-        initial_epoch: int = checkpoint["epoch"]  # type: ignore
-    else:
-        checkpoint = None
-        model_type = models[args.model_type]
-        initial_epoch = 0
 
     np.random.seed(args.seed)
     torch.manual_seed(args.seed)
 
-    ds = WaveDataset(
-        args.data_dir,
-        target_length=1541,
-        dtype=torch.float32,
-        filter_fn=get_filter_fn_by_vs_vp(max_vs=args.max_vs, max_vp=args.max_vp),
-        x_transform=(
-            model_type.dataset_x_transform  # type: ignore
-            if hasattr(model_type, "dataset_x_transform")
-            else None
-        ),
-        y_transform=(
-            model_type.dataset_y_transform  # type: ignore
-            if hasattr(model_type, "dataset_y_transform")
-            else None
-        ),
-    )
+    ds, model, optimizer, initial_epoch = load_checkpoint(args.checkpoint_path)
+
+    for param_group in optimizer.param_groups:
+        param_group["lr"] = args.learning_rate
+
     train_loader, test_loader, val_loader = (
         torch.utils.data.DataLoader(
             ds_split,
@@ -86,18 +42,7 @@ if __name__ == "__main__":
         for ds_split in split_dataset(ds, torch.ones(len(ds)), args.splits)
     )
 
-    x_shape, y_shape = map(lambda t: t.shape, ds[0])
-    print(f"Sample shapes: {x_shape=} {y_shape=}", end="\n\n")
-
-    model = model_type(x_shape, y_shape)
-    optimizer = torch.optim.Adam(model.parameters(), lr=args.learning_rate)
     loss_fn = torch.nn.MSELoss(reduction="sum")
-
-    if checkpoint is not None:
-        model_state_dict = checkpoint["model_state_dict"]
-        model.load_state_dict(model_state_dict)
-        optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
-    del checkpoint
 
     test_metrics = test(dataloader=test_loader, model=model, loss_fn=loss_fn)
     print("Testing metrics:", test_metrics, end="\n\n")
@@ -112,10 +57,8 @@ if __name__ == "__main__":
     )
     interrupted: bool = epoch < initial_epoch + args.epochs
 
-    if args.output_path is not None:
-        if interrupted and input("Interrupted, save model? [y/N] ").lower() not in [
-            "y",
-            "yes",
-        ]:
-            exit()
-        save_checkpoint(model, optimizer, args.output_path, epoch)
+    if not interrupted or input("Interrupted, save model? [y/N] ").lower() in [
+        "y",
+        "yes",
+    ]:
+        update_checkpoint(args.checkpoint_path, model, optimizer, epoch)
