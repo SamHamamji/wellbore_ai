@@ -7,7 +7,7 @@ class AmplitudeFftCnn2d(torch.nn.Sequential):
     dataset_x_transform = torch.nn.Sequential(
         torch.nn.LazyBatchNorm1d(),
         FftLayer(-1, -3, polar_decomposition=True),
-        SelectIndexLayer(-3, (slice(0, 1), slice(None), slice(None))),
+        SelectIndexLayer((slice(0, 1), slice(None), slice(None))),
     )
 
     def __init__(self, input_shape: torch.Size, output_shape: torch.Size):

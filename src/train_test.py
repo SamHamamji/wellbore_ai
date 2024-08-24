@@ -30,7 +30,7 @@ def train_single_epoch(
         total_loss += loss
 
         print(
-            f"Batch loss: {loss:<7f} [{i+1:{batch_len}d} / {batch_num:<{batch_len}d}] {delay:4f}s",
+            f"Batch loss: {loss:<7f} [{i+1:{batch_len}d} / {batch_num:<{batch_len}d}] | {delay:4f}s",
             end="\r",
         )
 

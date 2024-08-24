@@ -57,7 +57,7 @@ if __name__ == "__main__":
     )
     interrupted: bool = epoch < initial_epoch + args.epochs
 
-    if not interrupted or input("Interrupted, save model? [y/N] ").lower() in [
+    if not interrupted or input("\nInterrupted, save model? [y/N] ").lower() in [
         "y",
         "yes",
     ]:

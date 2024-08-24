@@ -51,7 +51,7 @@ if __name__ == "__main__":
     transform = torch.nn.Sequential(
         torch.nn.LazyBatchNorm1d(),
         FftLayer(-1, -1, args.polar),
-        SelectIndexLayer(-1, (slice(None), slice(200), slice(None))),
+        SelectIndexLayer((slice(None), slice(200), slice(None))),
     )
     x, y = ds[args.sample_index]
 
