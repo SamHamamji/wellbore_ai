@@ -30,12 +30,12 @@ def train_single_epoch(
         total_loss += loss
 
         print(
-            f"batch loss: {loss:<7f} [{i+1:{batch_len}d} / {batch_num:<{batch_len}d}] {delay:4f}s",
+            f"Batch loss: {loss:<7f} [{i+1:{batch_len}d} / {batch_num:<{batch_len}d}] {delay:4f}s",
             end="\r",
         )
 
     return dict(
-        avg_loss=total_loss.item() / sample_num,
+        rmse_loss=torch.sqrt(total_loss / sample_num).item(),
     )
 
 
@@ -47,37 +47,21 @@ def train(
     loss_fn: torch.nn.Module,
     optimizer: torch.optim.Optimizer,
 ):
-    def clear_lines(n: int):
-        if n <= 0:
-            return
-        print("\r\x1b[2K" + "\033[1A\x1b[2K" * (n - 1), end="")
-
-    def print_epoch_paragraph(lines_to_clear: int, subheader: str, *contents: str):
-        clear_lines(lines_to_clear)
-        print(f"Epoch {epoch}: {subheader}")
-        for content in contents:
-            print(content)
-
     try:
         for epoch in range(epochs[0], epochs[1]):
             initial_time = time.time()
-            print_epoch_paragraph(0, "Training...")
+            print(f"Epoch {epoch}:")
             train_metrics = train_single_epoch(
                 train_dataloader, model, loss_fn, optimizer
             )
-
             training_time = time.time() - initial_time
-            print_epoch_paragraph(2, f"{training_time:.2f}s", "Testing...")
+            print(f"Training metrics: {train_metrics} | {training_time:.2f}s")
+            print("Testing...", end="\r")
 
             test_metrics = test(test_dataloader, model, loss_fn)
 
             testing_time = time.time() - initial_time - training_time
-            print_epoch_paragraph(
-                3,
-                f"{training_time:.2f}s | {testing_time:.2f}s",
-                f"Training metrics: {train_metrics}",
-                f"Testing metrics: {test_metrics}",
-            )
+            print(f"Testing metrics: {test_metrics} | {testing_time:.2f}s")
             print()
     except KeyboardInterrupt:
         return epoch
@@ -91,16 +75,16 @@ def test(
     loss_fn: torch.nn.Module,
 ):
     model.eval()
+    total_loss = torch.Tensor([0.0])
     sample_num: int = 0
-    loss: float = 0.0
 
     with torch.no_grad():
         for x_batch, y_batch in dataloader:
             pred_batch: torch.Tensor = model(x_batch)
-            loss += loss_fn(pred_batch, y_batch).item()
 
+            total_loss += loss_fn(pred_batch, y_batch)
             sample_num += y_batch.shape[0]
 
     return dict(
-        avg_loss=loss / sample_num,
+        rmse_loss=torch.sqrt(total_loss / sample_num).item(),
     )
