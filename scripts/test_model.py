@@ -13,7 +13,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--model_path", type=str, required=True)
 parser.add_argument("--dataloader_workers", type=int, default=0)
 parser.add_argument("--batch_size", type=int, default=1)
-parser.add_argument("--validation", action="store_true")
+parser.add_argument("--test", action="store_true")
 parser.add_argument("--splits", type=float, nargs="+", default=(0.7, 0.2, 0.1))
 parser.add_argument("--seed", type=int, default=0)
 
@@ -26,7 +26,7 @@ if __name__ == "__main__":
 
     ds, model, _, _ = load_checkpoint(args.model_path)
 
-    train_loader, test_loader, val_loader = (
+    train_loader, val_loader, test_loader = (
         torch.utils.data.DataLoader(
             ds_split,
             batch_size=args.batch_size,
@@ -38,6 +38,6 @@ if __name__ == "__main__":
     loss_fn = torch.nn.MSELoss(reduction="sum")
 
     print("Train metrics: ", test(train_loader, model, loss_fn))
-    print("Test metrics: ", test(test_loader, model, loss_fn))
-    if args.validation:
-        print("Validation metrics: ", test(val_loader, model, loss_fn))
+    print("Validation metrics: ", test(val_loader, model, loss_fn))
+    if args.test:
+        print("Test metrics: ", test(test_loader, model, loss_fn))

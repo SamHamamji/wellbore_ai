@@ -41,7 +41,7 @@ def train_single_epoch(
 
 def train(
     train_dataloader: torch.utils.data.DataLoader[tuple[torch.Tensor, torch.Tensor]],
-    test_dataloader: torch.utils.data.DataLoader[tuple[torch.Tensor, torch.Tensor]],
+    val_dataloader: torch.utils.data.DataLoader[tuple[torch.Tensor, torch.Tensor]],
     model: torch.nn.Module,
     epochs: tuple[int, int],
     loss_fn: torch.nn.Module,
@@ -58,10 +58,10 @@ def train(
             print(f"Training metrics: {train_metrics} | {training_time:.2f}s")
             print("Testing...", end="\r")
 
-            test_metrics = test(test_dataloader, model, loss_fn)
+            val_metrics = test(val_dataloader, model, loss_fn)
 
             testing_time = time.time() - initial_time - training_time
-            print(f"Testing metrics: {test_metrics} | {testing_time:.2f}s")
+            print(f"Validation metrics: {val_metrics} | {testing_time:.2f}s")
             print()
     except KeyboardInterrupt:
         return epoch

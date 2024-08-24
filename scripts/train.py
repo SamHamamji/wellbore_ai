@@ -33,7 +33,7 @@ if __name__ == "__main__":
     for param_group in optimizer.param_groups:
         param_group["lr"] = args.learning_rate
 
-    train_loader, test_loader, val_loader = (
+    train_loader, val_loader, test_loader = (
         torch.utils.data.DataLoader(
             ds_split,
             batch_size=args.batch_size,
@@ -44,12 +44,12 @@ if __name__ == "__main__":
 
     loss_fn = torch.nn.MSELoss(reduction="sum")
 
-    test_metrics = test(dataloader=test_loader, model=model, loss_fn=loss_fn)
-    print("Testing metrics:", test_metrics, end="\n\n")
+    val_metrics = test(dataloader=val_loader, model=model, loss_fn=loss_fn)
+    print("Validation metrics:", val_metrics, end="\n\n")
 
     epoch = train(
         train_loader,
-        test_loader,
+        val_loader,
         model,
         (initial_epoch, initial_epoch + args.epochs),
         loss_fn,
