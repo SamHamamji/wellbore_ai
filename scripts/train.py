@@ -1,4 +1,5 @@
 import argparse
+import typing
 
 import numpy as np
 import torch.utils.data
@@ -42,9 +43,13 @@ if __name__ == "__main__":
         for ds_split in split_dataset(ds, torch.ones(len(ds)), args.splits)
     )
 
-    loss_fn = torch.nn.MSELoss(reduction="sum")
+    metrics: dict[str, typing.Callable[[torch.Tensor, torch.Tensor], torch.Tensor]] = {
+        "rmse": lambda y, pred: (y - pred).square().mean(0).sqrt(),
+        "mae": lambda y, pred: (y - pred).abs().mean(0),
+        "mare": lambda y, pred: ((y - pred).abs() / y).mean(0),
+    }
 
-    val_metrics = test(dataloader=val_loader, model=model, loss_fn=loss_fn)
+    val_metrics = test(val_loader, model, metrics)
     print("Validation metrics:", val_metrics, end="\n\n")
 
     epoch = train(
@@ -52,7 +57,7 @@ if __name__ == "__main__":
         val_loader,
         model,
         (initial_epoch, initial_epoch + args.epochs),
-        loss_fn,
+        lambda y, pred: (y - pred).square(),
         optimizer,
     )
     interrupted: bool = epoch < initial_epoch + args.epochs
