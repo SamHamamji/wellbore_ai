@@ -24,7 +24,7 @@ if __name__ == "__main__":
     np.random.seed(args.seed)
     torch.manual_seed(args.seed)
 
-    ds, model, _, _ = load_checkpoint(args.model_path)
+    ds, model, _, epoch = load_checkpoint(args.model_path)
 
     train_loader, val_loader, test_loader = (
         torch.utils.data.DataLoader(
@@ -36,6 +36,10 @@ if __name__ == "__main__":
     )
 
     loss_fn = torch.nn.MSELoss(reduction="sum")
+
+    print(f"Epoch {epoch}")
+    print(f"Dataset x transform: {ds.x_transform}")
+    print(f"Dataset x bounds: {ds.bounds}")
 
     print("Train metrics: ", test(train_loader, model, loss_fn))
     print("Validation metrics: ", test(val_loader, model, loss_fn))
