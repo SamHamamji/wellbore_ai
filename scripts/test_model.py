@@ -27,26 +27,32 @@ if __name__ == "__main__":
 
     ds, model, _, epoch = load_checkpoint(args.model_path)
 
-    train_loader, val_loader, test_loader = (
-        torch.utils.data.DataLoader(
-            ds_split,
-            batch_size=args.batch_size,
-            num_workers=args.dataloader_workers,
-        )
-        for ds_split in split_dataset(ds, torch.ones(len(ds)), args.splits)
-    )
+    print(f"Epoch {epoch}")
+    print(f"Dataset x transform: {ds.x_transform}")
+    print(f"Dataset y bounds: {ds.bounds}")
+    print()
 
     metrics: dict[str, typing.Callable[[torch.Tensor, torch.Tensor], torch.Tensor]] = {
         "rmse": lambda y, pred: (y - pred).square().mean(0).sqrt(),
         "mae": lambda y, pred: (y - pred).abs().mean(0),
         "mare": lambda y, pred: ((y - pred).abs() / y).mean(0),
+        "var are": lambda y, pred: ((y - pred).abs() / y).var(0),
     }
 
-    print(f"Epoch {epoch}")
-    print(f"Dataset x transform: {ds.x_transform}")
-    print(f"Dataset x bounds: {ds.bounds}")
+    for split_name, ds_split in zip(
+        ("Train", "Validation", "Test"),
+        split_dataset(ds, torch.ones(len(ds)), args.splits),
+    ):
+        if split_name == "Test" and not args.test:
+            continue
 
-    print("Train metrics: ", test(train_loader, model, metrics))
-    print("Validation metrics: ", test(val_loader, model, metrics))
-    if args.test:
-        print("Test metrics: ", test(test_loader, model, metrics))
+        loader = torch.utils.data.DataLoader(
+            ds_split,
+            batch_size=args.batch_size,
+            num_workers=args.dataloader_workers,
+        )
+
+        print(f"{split_name} metrics:")
+        for metric_name, result in test(loader, model, metrics).items():
+            print(f"\t{metric_name}: {result}")
+        print()
