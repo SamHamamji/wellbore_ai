@@ -2,7 +2,7 @@ import torch
 
 
 class SelectIndexLayer(torch.nn.Module):
-    def __init__(self, slices: tuple[slice, ...]):
+    def __init__(self, slices: tuple[slice | int, ...]):
         super().__init__()
         self.slices = slices
 
