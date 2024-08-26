@@ -10,6 +10,7 @@ from src.checkpoint import load_checkpoint
 parser = argparse.ArgumentParser()
 
 parser.add_argument("--checkpoint_path", type=str, required=True)
+parser.add_argument("--proportion", type=float, default=1.0)
 parser.add_argument("--seed", type=int, default=0)
 
 
@@ -21,7 +22,9 @@ if __name__ == "__main__":
 
     ds, model, _, _ = load_checkpoint(args.checkpoint_path)
 
-    loader = torch.utils.data.DataLoader(ds, num_workers=8, batch_size=len(ds) // 8)
+    loader = torch.utils.data.DataLoader(
+        ds, num_workers=8, batch_size=int(len(ds) * args.proportion)
+    )
 
     x, y = next(iter(loader))
 
