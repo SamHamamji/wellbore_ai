@@ -35,8 +35,9 @@ if __name__ == "__main__":
     metrics: dict[str, typing.Callable[[torch.Tensor, torch.Tensor], torch.Tensor]] = {
         "rmse": lambda y, pred: (y - pred).square().mean(0).sqrt(),
         "mae": lambda y, pred: (y - pred).abs().mean(0),
+        "error std": lambda y, pred: (y - pred).std(0),
         "mare": lambda y, pred: ((y - pred).abs() / y).mean(0),
-        "var are": lambda y, pred: ((y - pred).abs() / y).var(0),
+        "are std": lambda y, pred: ((y - pred).abs() / y).std(0),
     }
 
     for split_name, ds_split in zip(
