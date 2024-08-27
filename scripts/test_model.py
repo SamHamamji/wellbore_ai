@@ -33,11 +33,11 @@ if __name__ == "__main__":
     print()
 
     metrics: dict[str, typing.Callable[[torch.Tensor, torch.Tensor], torch.Tensor]] = {
-        "rmse": lambda y, pred: (y - pred).square().mean(0).sqrt(),
-        "mae": lambda y, pred: (y - pred).abs().mean(0),
-        "error std": lambda y, pred: (y - pred).std(0),
-        "mare": lambda y, pred: ((y - pred).abs() / y).mean(0),
-        "are std": lambda y, pred: ((y - pred).abs() / y).std(0),
+        "rmse": lambda y, pred: (pred - y).square().mean(0).sqrt(),
+        "mae": lambda y, pred: (pred - y).abs().mean(0),
+        "error std": lambda y, pred: (pred - y).std(0),
+        "mare": lambda y, pred: ((pred - y).abs() / y).mean(0),
+        "relative error std": lambda y, pred: ((pred - y) / y).std(0),
     }
 
     for split_name, ds_split in zip(
