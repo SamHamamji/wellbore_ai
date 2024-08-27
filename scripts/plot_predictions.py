@@ -32,11 +32,11 @@ if __name__ == "__main__":
     with torch.no_grad():
         pred = model(x)
 
-    for target in range(y.shape[-1]):
+    for target_name, target_index in zip(["Vs", "Vp"], range(y.shape[-1])):
         fig = px.scatter(
-            x=y[..., target],
-            y=pred[..., target],
-            labels={"x": "y", "y": f"pred {target}"},
+            x=y[..., target_index],
+            y=pred[..., target_index],
+            labels={"x": "y", "y": target_name},
         )
-        fig.add_scatter(x=y[..., target], y=y[..., target])
+        fig.add_scatter(x=y[..., target_index], y=y[..., target_index])
         fig.show()
