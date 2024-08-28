@@ -49,6 +49,7 @@ def train(
     optimizer: torch.optim.Optimizer,
 ):
     try:
+        epoch = epochs[0] - 1
         for epoch in range(epochs[0], epochs[1]):
             initial_time = time.time()
             print(f"Epoch {epoch}:")
