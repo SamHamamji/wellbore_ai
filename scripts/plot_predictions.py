@@ -3,6 +3,7 @@ import argparse
 import numpy as np
 import torch.utils.data
 import plotly.express as px
+import plotly.graph_objects as go
 
 from src.checkpoint import load_checkpoint
 
@@ -27,16 +28,28 @@ if __name__ == "__main__":
     )
 
     x, y = next(iter(loader))
+    x: torch.Tensor
+    y: torch.Tensor
 
     model.eval()
     with torch.no_grad():
         pred = model(x)
 
-    for target_name, target_index in zip(["Vs", "Vp"], range(y.shape[-1])):
-        fig = px.scatter(
-            x=y[..., target_index],
-            y=pred[..., target_index],
-            labels={"x": "y", "y": target_name},
+    for target_name, target_index in zip(["Vs (m/s)", "Vp (m/s)"], range(y.shape[-1])):
+        target_y = y[..., target_index]
+        target_pred = pred[..., target_index]
+
+        boundaries = torch.stack([target_y.min(), target_y.max()])
+
+        traces = [
+            go.Scatter(x=target_y, y=target_pred, mode="markers", showlegend=False),
+            go.Scatter(x=boundaries, y=boundaries, mode="lines", showlegend=False),
+        ]
+        fig = go.Figure(
+            traces,
+            layout={
+                "xaxis_title": f"True {target_name}",
+                "yaxis_title": f"Predicted {target_name}",
+            },
         )
-        fig.add_scatter(x=y[..., target_index], y=y[..., target_index])
         fig.show()
