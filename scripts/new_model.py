@@ -12,8 +12,8 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--data_dir", type=str, required=True)
 parser.add_argument("--checkpoint_path", type=str, default=None)
 parser.add_argument("--model_type", type=str, choices=models.keys())
-parser.add_argument("--max_vs", required=False)
-parser.add_argument("--max_vp", required=False)
+parser.add_argument("--max_vs", type=int, required=False)
+parser.add_argument("--max_vp", type=int, required=False)
 parser.add_argument("--seed", type=int, default=0)
 
 
