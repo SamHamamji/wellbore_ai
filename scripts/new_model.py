@@ -24,7 +24,6 @@ if __name__ == "__main__":
     torch.manual_seed(args.seed)
 
     model_type = models[args.model_type]
-    optimizer_type = torch.optim.Adam
 
     ds = WaveDataset(
         data_dir=args.data_dir,
@@ -50,6 +49,13 @@ if __name__ == "__main__":
     print(f"Sample shapes: {x_shape=} {y_shape=}")
 
     model = model_type(x_shape, y_shape)
-    optimizer = optimizer_type(model.parameters(), lr=0)
+    optimizer = torch.optim.Adam(model.parameters(), lr=0)
+    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+        optimizer,
+        factor=0.9,
+        cooldown=3,
+        threshold=0.005,
+        patience=10,
+    )
 
-    new_checkpoint(args.checkpoint_path, ds, model, optimizer, 0)
+    new_checkpoint(args.checkpoint_path, ds, model, optimizer, scheduler)

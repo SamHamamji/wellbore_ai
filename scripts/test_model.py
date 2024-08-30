@@ -25,9 +25,9 @@ if __name__ == "__main__":
     np.random.seed(args.seed)
     torch.manual_seed(args.seed)
 
-    ds, model, _, epoch = load_checkpoint(args.model_path)
+    ds, model, _, scheduler = load_checkpoint(args.model_path)
 
-    print(f"Epoch {epoch}")
+    print(f"Epoch: {scheduler.last_epoch}")
     print(f"Dataset x transform: {ds.x_transform}")
     print(f"Dataset y bounds: {ds.bounds}")
     print()

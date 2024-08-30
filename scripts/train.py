@@ -15,7 +15,7 @@ parser.add_argument("--seed", type=int, default=0)
 
 training_args = parser.add_argument_group("Training")
 training_args.add_argument("--epochs", type=int, required=True)
-training_args.add_argument("--learning_rate", type=float, required=True)
+training_args.add_argument("--learning_rate", type=float)
 
 data_args = parser.add_argument_group("Data Processing")
 data_args.add_argument("--batch_size", type=int, default=1)
@@ -29,10 +29,11 @@ if __name__ == "__main__":
     np.random.seed(args.seed)
     torch.manual_seed(args.seed)
 
-    ds, model, optimizer, initial_epoch = load_checkpoint(args.checkpoint_path)
+    ds, model, optimizer, scheduler = load_checkpoint(args.checkpoint_path)
 
-    for param_group in optimizer.param_groups:
-        param_group["lr"] = args.learning_rate
+    if args.learning_rate:
+        for param_group in optimizer.param_groups:
+            param_group["lr"] = args.learning_rate
 
     train_loader, val_loader, test_loader = (
         torch.utils.data.DataLoader(
@@ -52,18 +53,18 @@ if __name__ == "__main__":
     val_metrics = test(val_loader, model, metrics)
     print("Validation metrics:", val_metrics, end="\n\n")
 
-    epoch = train(
-        train_loader,
-        val_loader,
-        model,
-        (initial_epoch, initial_epoch + args.epochs),
-        lambda y, pred: (y - pred).square(),
-        optimizer,
-    )
-    interrupted: bool = epoch < initial_epoch + args.epochs
+    try:
+        train(
+            train_loader,
+            val_loader,
+            model,
+            args.epochs,
+            lambda y, pred: (y - pred).square(),
+            optimizer,
+            scheduler,
+        )
+    except KeyboardInterrupt:
+        if input("\nInterrupted, save model? [y/N] ").lower() not in ["y", "yes"]:
+            exit(0)
 
-    if not interrupted or input("\nInterrupted, save model? [y/N] ").lower() in [
-        "y",
-        "yes",
-    ]:
-        update_checkpoint(args.checkpoint_path, model, optimizer, epoch)
+    update_checkpoint(args.checkpoint_path, model, optimizer, scheduler)

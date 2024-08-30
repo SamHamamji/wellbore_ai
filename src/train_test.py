@@ -44,35 +44,43 @@ def train(
     train_dataloader: torch.utils.data.DataLoader[tuple[torch.Tensor, torch.Tensor]],
     val_dataloader: torch.utils.data.DataLoader[tuple[torch.Tensor, torch.Tensor]],
     model: torch.nn.Module,
-    epochs: tuple[int, int],
+    epochs: int,
     loss_fn: typing.Callable[[torch.Tensor, torch.Tensor], torch.Tensor],
     optimizer: torch.optim.Optimizer,
+    scheduler: torch.optim.lr_scheduler.LRScheduler,
 ):
-    try:
-        epoch = epochs[0] - 1
-        for epoch in range(epochs[0], epochs[1]):
-            initial_time = time.time()
-            print(f"Epoch {epoch}:")
-            train_metrics = train_single_epoch(
-                train_dataloader, model, loss_fn, optimizer
-            )
-            training_time = time.time() - initial_time
-            print(f"Training metrics: {train_metrics} | {training_time:.2f}s")
-            print("Testing...", end="\r")
+    for _ in range(epochs):
+        [initial_lr] = scheduler.get_last_lr()
+        initial_time = time.time()
+        print(f"Epoch {scheduler.last_epoch}:")
 
-            val_metrics = test(
-                val_dataloader,
-                model,
-                {"loss": lambda y, pred: loss_fn(pred, y).mean(0)},
-            )
+        state_dict = scheduler.state_dict()
+        if state_dict["cooldown_counter"] != 0:
+            epoch_state = f"{state_dict["cooldown_counter"]}/{state_dict["cooldown"]} cooldown"
+        else:
+            epoch_state = f"{state_dict["num_bad_epochs"]}/{state_dict["patience"]} bad epochs"
+        print(f"Best validation loss: {state_dict["best"]} | {epoch_state} | {initial_lr:.6f} learning rate")
 
-            testing_time = time.time() - initial_time - training_time
-            print(f"Validation metrics: {val_metrics} | {testing_time:.2f}s")
-            print()
-    except KeyboardInterrupt:
-        return epoch
+        train_metrics = train_single_epoch(train_dataloader, model, loss_fn, optimizer)
+        training_time = time.time() - initial_time
+        print(f"Training metrics: {train_metrics} | {training_time:.2f}s")
+        print("Testing...", end="\r")
 
-    return epoch + 1
+        val_metrics = test(
+            val_dataloader,
+            model,
+            {"loss": lambda y, pred: loss_fn(pred, y).mean(0)},
+        )
+
+        testing_time = time.time() - initial_time - training_time
+        print(f"Validation metrics: {val_metrics} | {testing_time:.2f}s")
+
+        scheduler.step(val_metrics["loss"].sum().item())  # type: ignore
+
+        if initial_lr != scheduler.get_last_lr():
+            initial_lr = scheduler.get_last_lr()
+            print(f"Updated learning rate to {initial_lr}")
+        print()
 
 
 def test(
