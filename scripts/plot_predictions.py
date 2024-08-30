@@ -2,7 +2,6 @@ import argparse
 
 import numpy as np
 import torch.utils.data
-import plotly.express as px
 import plotly.graph_objects as go
 
 from src.checkpoint import load_checkpoint
