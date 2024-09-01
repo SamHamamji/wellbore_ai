@@ -6,19 +6,19 @@ import torch.utils.data
 
 
 def train_single_epoch(
-    dataloader: torch.utils.data.DataLoader[tuple[torch.Tensor, torch.Tensor]],
+    loader: torch.utils.data.DataLoader[tuple[torch.Tensor, torch.Tensor]],
     model: torch.nn.Module,
     loss_fn: typing.Callable[[torch.Tensor, torch.Tensor], torch.Tensor],
     optimizer: torch.optim.Optimizer,
 ):
-    b_num = len(dataloader)
+    b_num = len(loader)
     b_len = len(str(b_num)) + 1
     total_loss = torch.Tensor()
 
     model.train()
     start_time = time.time()
 
-    for i, (x_batch, y_batch) in enumerate(dataloader):
+    for i, (x_batch, y_batch) in enumerate(loader):
         optimizer.zero_grad()
         pred_batch = model(x_batch)
 
@@ -41,50 +41,48 @@ def train_single_epoch(
 
 
 def train(
-    train_dataloader: torch.utils.data.DataLoader[tuple[torch.Tensor, torch.Tensor]],
-    val_dataloader: torch.utils.data.DataLoader[tuple[torch.Tensor, torch.Tensor]],
+    train_loader: torch.utils.data.DataLoader[tuple[torch.Tensor, torch.Tensor]],
+    val_loader: torch.utils.data.DataLoader[tuple[torch.Tensor, torch.Tensor]],
     model: torch.nn.Module,
     epochs: int,
     loss_fn: typing.Callable[[torch.Tensor, torch.Tensor], torch.Tensor],
     optimizer: torch.optim.Optimizer,
     scheduler: torch.optim.lr_scheduler.LRScheduler,
 ):
-    for _ in range(epochs):
-        [initial_lr] = scheduler.get_last_lr()
-        initial_time = time.time()
-        print(f"Epoch {scheduler.last_epoch}:")
 
+    for _ in range(epochs):
         state_dict = scheduler.state_dict()
         if state_dict["cooldown_counter"] != 0:
             epoch_state = f"{state_dict["cooldown_counter"]}/{state_dict["cooldown"]} cooldown"
         else:
             epoch_state = f"{state_dict["num_bad_epochs"]}/{state_dict["patience"]} bad epochs"
-        print(f"Best validation loss: {state_dict["best"]} | {epoch_state} | {initial_lr:.6f} learning rate")
+        [lr] = scheduler.get_last_lr()
 
-        train_metrics = train_single_epoch(train_dataloader, model, loss_fn, optimizer)
+        print(f"Epoch {scheduler.last_epoch}:")
+        print(f"Best loss: {state_dict["best"]} | {epoch_state} | {lr:.6f} learning rate")
+
+        initial_time = time.time()
+        train_metrics = train_single_epoch(train_loader, model, loss_fn, optimizer)
         training_time = time.time() - initial_time
-        print(f"Training metrics: {train_metrics} | {training_time:.2f}s")
+
+        print(f"Training metrics ({training_time:.2f}s): {train_metrics}")
         print("Testing...", end="\r")
 
         val_metrics = test(
-            val_dataloader,
+            val_loader,
             model,
             {"loss": lambda y, pred: loss_fn(pred, y).mean(0)},
         )
-
         testing_time = time.time() - initial_time - training_time
-        print(f"Validation metrics: {val_metrics} | {testing_time:.2f}s")
 
-        scheduler.step(val_metrics["loss"].sum().item())  # type: ignore
-
-        if initial_lr != scheduler.get_last_lr():
-            initial_lr = scheduler.get_last_lr()
-            print(f"Updated learning rate to {initial_lr}")
+        print(f"Validation metrics ({testing_time:.2f}s): {val_metrics}")
         print()
+
+        scheduler.step(train_metrics["loss"].sum().item())  # type: ignore
 
 
 def test(
-    dataloader: torch.utils.data.DataLoader[tuple[torch.Tensor, torch.Tensor]],
+    loader: torch.utils.data.DataLoader[tuple[torch.Tensor, torch.Tensor]],
     model: torch.nn.Module,
     metrics: dict[str, typing.Callable[[torch.Tensor, torch.Tensor], torch.Tensor]],
 ):
@@ -93,7 +91,7 @@ def test(
     total_y = torch.Tensor()
 
     with torch.no_grad():
-        for x_batch, y_batch in dataloader:
+        for x_batch, y_batch in loader:
             y_batch: torch.Tensor
             pred_batch: torch.Tensor = model(x_batch)
 
