@@ -1,6 +1,7 @@
 import torch
 
 from src.data.dataset import WaveDataset
+from src.pad_state_dicts import pad_model_state_dict, pad_optimizer_state_dict
 
 
 def new_checkpoint(
@@ -54,17 +55,23 @@ def load_checkpoint(checkpoint_path: str):
     ds = WaveDataset(**checkpoint["ds_kwargs"])
     x_shape, y_shape = map(lambda t: t.shape, ds[0])
 
-    model_type = checkpoint["model_type"]
+    model_type: type[torch.nn.Module] = checkpoint["model_type"]
     model = model_type(x_shape, y_shape)
-    model.load_state_dict(checkpoint["model_state_dict"])
+    model_state_dict = checkpoint["model_state_dict"]
 
     optimizer_type = checkpoint["optimizer_type"]
     optimizer: torch.optim.Optimizer = optimizer_type(model.parameters())
-    optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
+    optimizer_state_dict = checkpoint["optimizer_state_dict"]
 
     scheduler_type = checkpoint["scheduler_type"]
     scheduler: torch.optim.lr_scheduler.LRScheduler = scheduler_type(optimizer)
+
+    pad_model_state_dict(model_state_dict, model, 0.001)
+    pad_optimizer_state_dict(optimizer_state_dict, model, 1e-10, 1e-10)
+
     scheduler.load_state_dict(checkpoint["scheduler_state_dict"])
+    model.load_state_dict(model_state_dict)
+    optimizer.load_state_dict(optimizer_state_dict)
 
     if not isinstance(model, torch.nn.Module):
         raise ValueError("model_type must be a subclass of Module")
