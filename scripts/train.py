@@ -34,6 +34,7 @@ if __name__ == "__main__":
     if args.learning_rate:
         for param_group in optimizer.param_groups:
             param_group["lr"] = args.learning_rate
+        scheduler._last_lr = [args.learning_rate]
 
     train_loader, val_loader, test_loader = (
         torch.utils.data.DataLoader(
