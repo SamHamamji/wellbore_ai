@@ -18,8 +18,8 @@ def pad_model_state_dict(state_dict: dict, model: torch.nn.Module, value: float)
         if params.shape == target_shape:
             continue
 
+        print(f"Warning: Padded {param_name} from {params.shape} to {target_shape}")
         state_dict[param_name] = pad_tensor(params, target_shape, value)
-        print(f"Warning: Padded {param_name} to shape {target_shape}")
 
 
 def pad_optimizer_state_dict(

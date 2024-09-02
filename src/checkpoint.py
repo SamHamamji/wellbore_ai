@@ -67,7 +67,8 @@ def load_checkpoint(checkpoint_path: str):
     scheduler: torch.optim.lr_scheduler.LRScheduler = scheduler_type(optimizer)
 
     pad_model_state_dict(model_state_dict, model, 0.001)
-    pad_optimizer_state_dict(optimizer_state_dict, model, 1e-10, 1e-10)
+    if optimizer_state_dict["state"]:
+        pad_optimizer_state_dict(optimizer_state_dict, model, 0, 0)
 
     scheduler.load_state_dict(checkpoint["scheduler_state_dict"])
     model.load_state_dict(model_state_dict)
