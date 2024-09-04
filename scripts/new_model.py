@@ -53,9 +53,9 @@ if __name__ == "__main__":
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
         optimizer,
         factor=0.9,
-        cooldown=3,
+        cooldown=8,
         threshold=0.005,
-        patience=10,
+        patience=8,
     )
 
     new_checkpoint(args.checkpoint_path, ds, model, optimizer, scheduler)
