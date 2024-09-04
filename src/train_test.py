@@ -47,8 +47,9 @@ def train(
     epochs: int,
     loss_fn: typing.Callable[[torch.Tensor, torch.Tensor], torch.Tensor],
     optimizer: torch.optim.Optimizer,
-    scheduler: torch.optim.lr_scheduler.LRScheduler,
+    scheduler: torch.optim.lr_scheduler.ReduceLROnPlateau,
 ):
+    [lr] = scheduler.get_last_lr()
 
     for _ in range(epochs):
         state_dict = scheduler.state_dict()
@@ -56,10 +57,9 @@ def train(
             epoch_state = f"{state_dict["cooldown_counter"]}/{state_dict["cooldown"]} cooldown"
         else:
             epoch_state = f"{state_dict["num_bad_epochs"]}/{state_dict["patience"]} bad epochs"
-        [lr] = scheduler.get_last_lr()
 
         print(f"Epoch {scheduler.last_epoch}:")
-        print(f"Best loss: {state_dict["best"]} | {epoch_state} | {lr:.6f} learning rate")
+        print(f"Best loss: {state_dict["best"]} | {epoch_state} | {lr:.2e} learning rate")
 
         initial_time = time.time()
         train_metrics = train_single_epoch(train_loader, model, loss_fn, optimizer)
@@ -75,10 +75,15 @@ def train(
         )
         testing_time = time.time() - initial_time - training_time
 
-        print(f"Validation metrics ({testing_time:.2f}s): {val_metrics}")
+        print(f"Validation metrics ({testing_time:.1f}s): {val_metrics}")
         print()
 
-        scheduler.step(train_metrics["loss"].sum().item())  # type: ignore
+        scheduler_metric = train_metrics["loss"].sum().item()
+        scheduler.step(scheduler_metric)  # type: ignore\
+
+        if lr != scheduler.get_last_lr()[0]:
+            lr = scheduler.get_last_lr()[0]
+            scheduler.best = scheduler_metric
 
 
 def test(
