@@ -20,10 +20,10 @@ def plot_fft(wave: torch.Tensor, transform: torch.nn.Module):
     with torch.no_grad():
         spect = transform(wave)
 
-    sample_rate = 6.63130e-06
+    sampling_interval = 6.63130e-06
     # pylint: disable=not-callable
-    frequencies = torch.fft.rfftfreq(wave.shape[-1], d=sample_rate)
-    time = torch.arange(wave.shape[-1]) * sample_rate
+    frequencies = torch.fft.rfftfreq(wave.shape[-1], d=sampling_interval)
+    time = torch.arange(wave.shape[-1]) * sampling_interval
 
     app = dash.Dash()
 
