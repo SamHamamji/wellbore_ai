@@ -64,7 +64,7 @@ def load_checkpoint(checkpoint_path: str):
     optimizer_state_dict = checkpoint["optimizer_state_dict"]
 
     scheduler_type = checkpoint["scheduler_type"]
-    scheduler: torch.optim.lr_scheduler.LRScheduler = scheduler_type(optimizer)
+    scheduler: torch.optim.lr_scheduler.ReduceLROnPlateau = scheduler_type(optimizer)
 
     pad_model_state_dict(model_state_dict, model, 0.001)
     if optimizer_state_dict["state"]:
@@ -78,7 +78,7 @@ def load_checkpoint(checkpoint_path: str):
         raise ValueError("model_type must be a subclass of Module")
     if not isinstance(optimizer, torch.optim.Optimizer):
         raise ValueError("optimizer_type must be a subclass of Optimizer")
-    if not isinstance(scheduler, torch.optim.lr_scheduler.LRScheduler):
-        raise ValueError("scheduler_type must be a subclass of LRScheduler")
+    if not isinstance(scheduler, torch.optim.lr_scheduler.ReduceLROnPlateau):
+        raise ValueError("scheduler_type must be a subclass of ReduceLROnPlateau")
 
     return ds, model, optimizer, scheduler

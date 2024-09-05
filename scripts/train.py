@@ -15,7 +15,11 @@ parser.add_argument("--seed", type=int, default=0)
 
 training_args = parser.add_argument_group("Training")
 training_args.add_argument("--epochs", type=int, required=True)
-training_args.add_argument("--learning_rate", type=float)
+training_args.add_argument("--lr", type=float)
+training_args.add_argument("--lr_threshold", type=float)
+training_args.add_argument("--lr_factor", type=float)
+training_args.add_argument("--lr_cooldown", type=int)
+training_args.add_argument("--lr_patience", type=int)
 
 data_args = parser.add_argument_group("Data Processing")
 data_args.add_argument("--batch_size", type=int, default=1)
@@ -31,10 +35,14 @@ if __name__ == "__main__":
 
     ds, model, optimizer, scheduler = load_checkpoint(args.checkpoint_path)
 
-    if args.learning_rate:
+    if args.lr:
         for param_group in optimizer.param_groups:
-            param_group["lr"] = args.learning_rate
-        scheduler._last_lr = [args.learning_rate]
+            param_group["lr"] = args.lr
+        scheduler.get_last_lr()[0] = args.lr
+
+    for arg in ("lr_threshold", "lr_factor", "lr_cooldown", "lr_patience"):
+        if arg in args:
+            setattr(scheduler, arg.replace("lr_", ""), getattr(args, arg))
 
     train_loader, val_loader, test_loader = (
         torch.utils.data.DataLoader(
