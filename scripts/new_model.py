@@ -52,10 +52,8 @@ if __name__ == "__main__":
     optimizer = torch.optim.Adam(model.parameters(), lr=0)
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
         optimizer,
-        factor=0.9,
-        cooldown=8,
-        threshold=0.005,
-        patience=8,
+        factor=1,
+        threshold=0,
     )
 
     new_checkpoint(args.checkpoint_path, ds, model, optimizer, scheduler)
