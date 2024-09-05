@@ -33,11 +33,13 @@ def pad_optimizer_state_dict(
         params: dict[str, torch.Tensor] = state_dict["state"][i]
         target_shape: torch.Size = model_state_dict[param_name].shape
 
-        if params["exp_avg"].shape == target_shape:
+        if not param_name.endswith((".weight", ".bias")) or (
+            params["exp_avg"].shape == target_shape
+        ):
             continue
 
         params["exp_avg"] = pad_tensor(params["exp_avg"], target_shape, exp_avg_value)
         params["exp_avg_sq"] = pad_tensor(
             params["exp_avg_sq"], target_shape, exp_avg_sq_value
         )
-        print(f"Warning: Padded {param_name} in optimizer too")
+        print(f"Warning: Padded {param_name} in optimizer")
