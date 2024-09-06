@@ -27,6 +27,22 @@ data_args.add_argument("--dataloader_workers", type=int, default=0)
 data_args.add_argument("--splits", type=float, nargs="+", default=(0.7, 0.2, 0.1))
 
 
+def update_training_params(
+    args: argparse.Namespace,
+    optimizer: torch.optim.Optimizer,
+    scheduler: torch.optim.lr_scheduler.ReduceLROnPlateau,
+):
+    if args.lr:
+        for param_group in optimizer.param_groups:
+            param_group["lr"] = args.lr
+        scheduler.get_last_lr()[0] = args.lr
+
+    for arg in ("lr_threshold", "lr_factor", "lr_cooldown", "lr_patience"):
+        arg_value = getattr(args, arg)
+        if arg_value is not None:
+            setattr(scheduler, arg.replace("lr_", ""), arg_value)
+
+
 if __name__ == "__main__":
     args = parser.parse_args()
 
@@ -34,16 +50,6 @@ if __name__ == "__main__":
     torch.manual_seed(args.seed)
 
     ds, model, optimizer, scheduler = load_checkpoint(args.checkpoint_path)
-
-    if args.lr:
-        for param_group in optimizer.param_groups:
-            param_group["lr"] = args.lr
-        scheduler.get_last_lr()[0] = args.lr
-
-    for arg in ("lr_threshold", "lr_factor", "lr_cooldown", "lr_patience"):
-        if arg in args:
-            setattr(scheduler, arg.replace("lr_", ""), getattr(args, arg))
-
     train_loader, val_loader, test_loader = (
         torch.utils.data.DataLoader(
             ds_split,
@@ -55,12 +61,20 @@ if __name__ == "__main__":
 
     metrics: dict[str, typing.Callable[[torch.Tensor, torch.Tensor], torch.Tensor]] = {
         "rmse": lambda y, pred: (y - pred).square().mean(0).sqrt(),
-        "mae": lambda y, pred: (y - pred).abs().mean(0),
-        "mare": lambda y, pred: ((y - pred).abs() / y).mean(0),
     }
+    print(f"Training metrics: {test(train_loader, model, metrics)}")
+    print(f"Validation metrics: {test(val_loader, model, metrics)}")
 
-    val_metrics = test(val_loader, model, metrics)
-    print("Validation metrics:", val_metrics, end="\n\n")
+    update_training_params(args, optimizer, scheduler)
+    scheduler_state_dict = scheduler.state_dict()
+    training_params = {
+        "lr": scheduler.get_last_lr()[0],
+        "threshold": scheduler_state_dict["threshold"],
+        "factor": scheduler_state_dict["factor"],
+        "cooldown": scheduler_state_dict["cooldown"],
+        "patience": scheduler_state_dict["patience"],
+    }
+    print(f"Training parameters: {training_params}", end="\n\n")
 
     try:
         train(
