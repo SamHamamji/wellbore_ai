@@ -90,4 +90,4 @@ if __name__ == "__main__":
         if input("\nInterrupted, save model? [y/N] ").lower() not in ["y", "yes"]:
             exit(0)
 
-    update_checkpoint(args.checkpoint_path, model, optimizer, scheduler)
+    update_checkpoint(args.checkpoint_path, ds, model, optimizer, scheduler)

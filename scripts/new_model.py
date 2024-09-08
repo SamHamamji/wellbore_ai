@@ -12,6 +12,9 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--data_dir", type=str, required=True)
 parser.add_argument("--checkpoint_path", type=str, default=None)
 parser.add_argument("--model_type", type=str, choices=models.keys())
+parser.add_argument(
+    "--label_type", type=str, choices=WaveDataset.label_types.__args__, required=True
+)
 parser.add_argument("--max_vs", type=int, required=False)
 parser.add_argument("--max_vp", type=int, required=False)
 parser.add_argument("--seed", type=int, default=0)
@@ -33,6 +36,7 @@ if __name__ == "__main__":
             range(args.max_vs) if args.max_vs else None,
             range(args.max_vp) if args.max_vp else None,
         ),
+        label_type=args.label_type,
         x_transform=(
             model_type.dataset_x_transform  # type: ignore
             if hasattr(model_type, "dataset_x_transform")

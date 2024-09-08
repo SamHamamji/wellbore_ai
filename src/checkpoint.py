@@ -4,6 +4,17 @@ from src.data.dataset import WaveDataset
 from src.pad_state_dicts import pad_model_state_dict, pad_optimizer_state_dict
 
 
+def get_ds_kwargs(ds: WaveDataset):
+    return {
+        "data_dir": ds.data_dir,
+        "target_length": ds.target_length,
+        "x_transform": ds.x_transform,
+        "label_type": ds.label_type,
+        "bounds": ds.bounds,
+        "dtype": ds.dtype,
+    }
+
+
 def new_checkpoint(
     path: str,
     ds: WaveDataset,
@@ -11,16 +22,8 @@ def new_checkpoint(
     optimizer: torch.optim.Optimizer,
     scheduler: torch.optim.lr_scheduler.LRScheduler,
 ):
-    ds_kwargs = {
-        "data_dir": ds.data_dir,
-        "target_length": ds.target_length,
-        "dtype": ds.dtype,
-        "x_transform": ds.x_transform,
-        "bounds": ds.bounds,
-    }
-
     new_checkpoint = {
-        "ds_kwargs": ds_kwargs,
+        "ds_kwargs": get_ds_kwargs(ds),
         "model_state_dict": model.state_dict(),
         "model_type": type(model),
         "optimizer_state_dict": optimizer.state_dict(),
@@ -34,6 +37,7 @@ def new_checkpoint(
 
 def update_checkpoint(
     path: str,
+    ds: WaveDataset,
     model: torch.nn.Module,
     optimizer: torch.optim.Optimizer,
     scheduler: torch.optim.lr_scheduler.LRScheduler,
@@ -43,6 +47,7 @@ def update_checkpoint(
     checkpoint["model_state_dict"] = model.state_dict()
     checkpoint["optimizer_state_dict"] = optimizer.state_dict()
     checkpoint["scheduler_state_dict"] = scheduler.state_dict()
+    checkpoint["ds_kwargs"] = get_ds_kwargs(ds)
 
     torch.save(checkpoint, path)
     print(f"\nUpdated checkpoint in {path}")
