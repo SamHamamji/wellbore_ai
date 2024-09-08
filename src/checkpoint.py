@@ -16,7 +16,6 @@ def new_checkpoint(
         "target_length": ds.target_length,
         "dtype": ds.dtype,
         "x_transform": ds.x_transform,
-        "y_transform": ds.y_transform,
         "bounds": ds.bounds,
     }
 

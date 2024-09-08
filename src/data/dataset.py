@@ -31,14 +31,12 @@ class WaveDataset(torch.utils.data.Dataset):
         data_dir: str,
         target_length: int | None = None,
         x_transform: torch.nn.Module | None = None,
-        y_transform: torch.nn.Module | None = None,
         bounds: tuple[range | None, ...] = (),
         dtype: torch.dtype | None = None,
     ):
         self.data_dir = data_dir
         self.target_length = target_length
         self.x_transform = x_transform
-        self.y_transform = y_transform
         self.dtype = dtype
         self.bounds = bounds
 
@@ -68,9 +66,5 @@ class WaveDataset(torch.utils.data.Dataset):
         if self.x_transform is not None:
             with torch.no_grad():
                 wave: torch.Tensor = self.x_transform(wave)
-
-        if self.y_transform is not None:
-            with torch.no_grad():
-                target: torch.Tensor = self.y_transform(target)
 
         return (wave, target)

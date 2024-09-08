@@ -38,11 +38,6 @@ if __name__ == "__main__":
             if hasattr(model_type, "dataset_x_transform")
             else None
         ),
-        y_transform=(
-            model_type.dataset_y_transform  # type: ignore
-            if hasattr(model_type, "dataset_y_transform")
-            else None
-        ),
     )
 
     x_shape, y_shape = map(lambda t: t.shape, ds[0])
