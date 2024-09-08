@@ -30,7 +30,7 @@ def new_checkpoint(
         "scheduler_type": type(scheduler),
     }
     torch.save(new_checkpoint, path)
-    print(f"\nSaved checkpoint to {path}\n")
+    print(f"\nSaved checkpoint to {path}")
 
 
 def update_checkpoint(
@@ -46,7 +46,7 @@ def update_checkpoint(
     checkpoint["scheduler_state_dict"] = scheduler.state_dict()
 
     torch.save(checkpoint, path)
-    print(f"\nUpdated checkpoint in {path}\n")
+    print(f"\nUpdated checkpoint in {path}")
 
 
 def load_checkpoint(checkpoint_path: str):
