@@ -5,14 +5,13 @@ import scipy
 import torch
 import torch.utils.data
 
-scientific_notation = r"[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?"
-iso_file_regex = r".*ISO_vs({0})vp({1})_MP_dipole\.mat$".format(
-    scientific_notation, scientific_notation
-)
+num = r"[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?"
+target_variables = f"vs({num})vp({num})(?:eps({num})gam({num})del({num}))?"
+wave_file_regex = f".*(?:ISO|VTI)_{target_variables}_MP_dipole.mat$"
 
 
 def filter_files(file: str, bounds: tuple[range | None, ...]) -> bool:
-    match = re.match(iso_file_regex, file)
+    match = re.match(wave_file_regex, file)
     if match is None:
         return False
 
@@ -51,7 +50,7 @@ class WaveDataset(torch.utils.data.Dataset):
 
     def __getitem__(self, index: int):
         file = self.files[index]
-        data = scipy.io.loadmat(file)
+        data: dict = scipy.io.loadmat(file)
 
         wave = (
             torch.from_numpy(data["wavearray_param"]).T[1:].to(dtype=self.dtype)
