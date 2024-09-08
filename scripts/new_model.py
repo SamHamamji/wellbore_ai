@@ -52,7 +52,7 @@ if __name__ == "__main__":
     optimizer = torch.optim.Adam(model.parameters(), lr=0)
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
         optimizer,
-        factor=1,
+        factor=1 - 1e-10,
         threshold=0,
     )
 
