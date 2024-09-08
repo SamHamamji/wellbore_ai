@@ -56,7 +56,7 @@ if __name__ == "__main__":
             batch_size=args.batch_size,
             num_workers=args.dataloader_workers,
         )
-        for ds_split in split_dataset(ds, torch.ones(len(ds)), args.splits)
+        for ds_split in split_dataset(ds, args.splits)
     )
 
     metrics: dict[str, typing.Callable[[torch.Tensor, torch.Tensor], torch.Tensor]] = {

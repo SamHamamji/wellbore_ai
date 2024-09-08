@@ -43,7 +43,7 @@ if __name__ == "__main__":
 
         for split_name, ds_split in zip(
             ("Train", "Validation", "Test"),
-            split_dataset(ds, torch.ones(len(ds)), args.splits),
+            split_dataset(ds, args.splits),
         ):
             if split_name == "Test" and not args.test:
                 continue
