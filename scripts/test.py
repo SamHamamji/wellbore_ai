@@ -36,11 +36,7 @@ if __name__ == "__main__":
     for path in args.paths:
         ds, model, _, scheduler = load_checkpoint(path)
 
-        print(f"Epoch: {scheduler.last_epoch}")
-        print(f"Dataset x transform: {ds.x_transform}")
-        print(f"Dataset y bounds: {ds.bounds}")
-        print()
-
+        print(f"Model {path}, epoch {scheduler.last_epoch}")
         for split_name, ds_split in zip(
             ("Train", "Validation", "Test"),
             split_dataset(ds, args.splits),
@@ -54,7 +50,7 @@ if __name__ == "__main__":
                 num_workers=args.dataloader_workers,
             )
 
-            print(f"{split_name} metrics ({len(ds_split)} samples):")
+            print(f"\t{split_name} metrics ({len(ds_split)} samples):")
             for metric_name, result in test(loader, model, metrics).items():
-                print(f"\t{metric_name}: {result}")
+                print(f"\t\t{metric_name}: {result}")
             print()
