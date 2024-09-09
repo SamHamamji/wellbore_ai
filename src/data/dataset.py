@@ -54,6 +54,13 @@ class WaveDataset(torch.utils.data.Dataset):
     def __len__(self):
         return len(self.files)
 
+    def get_label_names(self):
+        if self.label_type == "isotropic":
+            return ("Vs (m/s)", "Vp (m/s)")
+        if self.label_type == "stiffness":
+            return ("c11", "c13", "c33", "c44", "c66")
+        raise NotImplementedError()
+
     def __getitem__(self, index: int):
         file = self.files[index]
         data: dict = scipy.io.loadmat(file)
@@ -85,5 +92,19 @@ class WaveDataset(torch.utils.data.Dataset):
             )
         else:
             raise NotImplementedError()
+
+        # print(type(data))
+        # print(f"Loaded {data.keys()}")
+        # for datum in data.keys():
+        #     if isinstance(data[datum], numpy.ndarray):
+        #         print(datum, data[datum].shape)
+        #     else:
+        #         print(datum, data[datum])
+        # print(file)
+        # print(
+        #     f"Data {data['vp_r']} | {data['vs_r']} | {data['epsilon'].shape} | {data['gamma'].shape} | {data['delta'].shape}"
+        # )
+
+        # exit(0)
 
         return (wave, target)

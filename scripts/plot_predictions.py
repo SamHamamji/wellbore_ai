@@ -34,7 +34,7 @@ if __name__ == "__main__":
     with torch.no_grad():
         pred = model(x)
 
-    for target_name, target_index in zip(["Vs (m/s)", "Vp (m/s)"], range(y.shape[-1])):
+    for target_index, target_name in enumerate(ds.get_label_names()):
         target_y = y[..., target_index]
         target_pred = pred[..., target_index]
 
