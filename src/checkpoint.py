@@ -1,3 +1,5 @@
+import os
+
 import torch
 
 from src.data.dataset import WaveDataset
@@ -31,8 +33,15 @@ def new_checkpoint(
         "scheduler_state_dict": scheduler.state_dict(),
         "scheduler_type": type(scheduler),
     }
+
+    print()
+    if os.path.exists(path) and input(
+        f"File {path} already exists, replace? [y/N] "
+    ).lower() not in ["y", "yes"]:
+        return
+
     torch.save(new_checkpoint, path)
-    print(f"\nSaved checkpoint to {path}")
+    print(f"Saved checkpoint to {path}")
 
 
 def update_checkpoint(
