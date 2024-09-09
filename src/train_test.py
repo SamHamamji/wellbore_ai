@@ -2,6 +2,7 @@ import time
 import typing
 
 import torch
+import torch.types
 import torch.utils.data
 
 
@@ -36,7 +37,7 @@ def train_single_epoch(
         )
 
     return dict(
-        loss=total_loss.mean(0),
+        loss=total_loss.mean(0).sum(0).item(),
     )
 
 
@@ -65,20 +66,20 @@ def train(
         train_metrics = train_single_epoch(train_loader, model, loss_fn, optimizer)
         training_time = time.time() - initial_time
 
-        print(f"Training metrics ({training_time:.2f}s): {train_metrics}")
-        print("Testing...", end="\r")
+        print(f"Training metrics ({training_time:.1f}s): {train_metrics}")
+        print("Validating...", end="\r")
 
         val_metrics = test(
             val_loader,
             model,
-            {"loss": lambda y, pred: loss_fn(pred, y).mean(0)},
+            {"loss": lambda y, pred: loss_fn(pred, y).mean(0).sum(0).item()},
         )
         testing_time = time.time() - initial_time - training_time
 
         print(f"Validation metrics ({testing_time:.1f}s): {val_metrics}")
         print()
 
-        scheduler_metric = train_metrics["loss"].sum().item()
+        scheduler_metric = train_metrics["loss"]
         scheduler.step(scheduler_metric)  # type: ignore\
 
         if lr != scheduler.get_last_lr()[0]:
@@ -89,7 +90,7 @@ def train(
 def test(
     loader: torch.utils.data.DataLoader[tuple[torch.Tensor, torch.Tensor]],
     model: torch.nn.Module,
-    metrics: dict[str, typing.Callable[[torch.Tensor, torch.Tensor], torch.Tensor]],
+    metrics: dict[str, typing.Callable[[torch.Tensor, torch.Tensor], torch.Tensor | torch.types.Number]],
 ):
     model.eval()
     total_preds = torch.Tensor()
