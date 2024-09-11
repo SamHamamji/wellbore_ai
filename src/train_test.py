@@ -66,7 +66,7 @@ def train(
         train_metrics = train_single_epoch(train_loader, model, loss_fn, optimizer)
         training_time = time.time() - initial_time
 
-        print(f"Training metrics ({training_time:.1f}s): {train_metrics}")
+        print(f"\033[KTraining metrics ({training_time:.1f}s): {train_metrics}")
         print("Validating...", end="\r")
 
         val_metrics = test(
