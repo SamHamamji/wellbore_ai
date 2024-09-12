@@ -1,14 +1,15 @@
 import os
 import re
+import typing
 
 import scipy
 import torch
 import torch.utils.data
-import typing
 
 num = r"[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?"
 target_variables = f"vs({num})vp({num})(?:eps({num})gam({num})del({num}))?"
 wave_file_regex = f".*(?:ISO|VTI)_{target_variables}_MP_dipole.mat$"
+wave_file_regex = re.compile(wave_file_regex)
 
 
 def filter_files(file: str, bounds: tuple[range | None, ...]) -> bool:
@@ -59,7 +60,7 @@ class WaveDataset(torch.utils.data.Dataset):
         if self.label_type == "stiffness":
             return ("c11", "c13", "c33", "c44", "c66")
         if self.label_type == "velocities":
-            return ("Vs_0", "Vp_0", "Vs_90", "Vp_90", "Vs_45")
+            return ("Vs_0", "Vp_0", "Vs_90", "Vp_90", "Vp_45")
         raise NotImplementedError()
 
     def __getitem__(self, index: int):
@@ -93,24 +94,29 @@ class WaveDataset(torch.utils.data.Dataset):
             )
 
         elif self.label_type == "velocities":
+            match = re.match(wave_file_regex, file)
+            assert match is not None
+
             density = data["dens_r"].item()
+            c11 = data["c11_r"].item() * 1e9
+            c33 = data["c33_r"].item() * 1e9
+            c44 = data["c44_r"].item() * 1e9
+            c66 = data["c66_r"].item() * 1e9
 
-            C11 = data["c11_r"].item() * 1e9
-            C13 = data["c13_r"].item() * 1e9
-            C33 = data["c33_r"].item() * 1e9
-            C44 = data["c44_r"].item() * 1e9
-            C66 = data["c66_r"].item() * 1e9
-
-            M1 = 0.25 * (C11 - C33) ** 2 + (C13 + C44) ** 2
-            M = 0.5 * (C11 + C33) + C44 + M1**0.5
+            M1 = (
+                0.25 * (c11 - c33) ** 2
+                + 2 * c33 * (c33 - c44) * float(match.groups()[4])
+                + (c33 - c44) ** 2
+            )  # assumes strong anisotropy
+            M = 0.5 * (c11 + c33) + c44 + M1**0.5
 
             target = torch.Tensor(
                 (
                     data["vs_r"].item(),  # VS_0
                     data["vp_r"].item(),  # VP_0
-                    (C66 / density) ** 0.5,  # VS_90
-                    (C11 / density) ** 0.5,  # VP_90
-                    (M / (2 * density)) ** 0.5,  # VS_45
+                    (c66 / density) ** 0.5,  # VS_90
+                    (c11 / density) ** 0.5,  # VP_90
+                    (M / (2 * density)) ** 0.5,  # VP_45
                 )
             )
 
