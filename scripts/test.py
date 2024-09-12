@@ -1,5 +1,4 @@
 import argparse
-import typing
 
 import numpy as np
 import torch.utils.data
@@ -7,6 +6,7 @@ import torch.utils.data
 from src.data.split import split_dataset
 from src.train_test import test
 from src.checkpoint import load_checkpoint
+from src.metric import Metric
 
 
 parser = argparse.ArgumentParser()
@@ -25,7 +25,7 @@ if __name__ == "__main__":
     np.random.seed(args.seed)
     torch.manual_seed(args.seed)
 
-    metrics: dict[str, typing.Callable[[torch.Tensor, torch.Tensor], torch.Tensor]] = {
+    metrics: dict[str, Metric] = {
         "rmse": lambda y, pred: (pred - y).square().mean(0).sqrt(),
         "mae": lambda y, pred: (pred - y).abs().mean(0),
         "error std": lambda y, pred: (pred - y).std(0),

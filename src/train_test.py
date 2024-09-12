@@ -2,9 +2,9 @@ import time
 import typing
 
 import torch
-import torch.types
 import torch.utils.data
 
+from src.metric import Metric
 
 def train_single_epoch(
     loader: torch.utils.data.DataLoader[tuple[torch.Tensor, torch.Tensor]],
@@ -90,7 +90,7 @@ def train(
 def test(
     loader: torch.utils.data.DataLoader[tuple[torch.Tensor, torch.Tensor]],
     model: torch.nn.Module,
-    metrics: dict[str, typing.Callable[[torch.Tensor, torch.Tensor], torch.Tensor | torch.types.Number]],
+    metrics: dict[str, Metric],
 ):
     model.eval()
     total_preds = torch.Tensor()

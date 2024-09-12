@@ -1,11 +1,11 @@
 import argparse
-import typing
 
 import numpy as np
 import torch.utils.data
 
 from src.checkpoint import update_checkpoint, load_checkpoint
 from src.data.split import split_dataset
+from src.metric import Metric
 from src.train_test import train, test
 
 
@@ -59,7 +59,7 @@ if __name__ == "__main__":
         for ds_split in split_dataset(ds, args.splits)
     )
 
-    metrics: dict[str, typing.Callable[[torch.Tensor, torch.Tensor], torch.Tensor]] = {
+    metrics: dict[str, Metric] = {
         "rmse": lambda y, pred: (y - pred).square().mean(0).sqrt(),
     }
     print(f"Training metrics: {test(train_loader, model, metrics)}")

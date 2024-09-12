@@ -1,7 +1,6 @@
 import os
 import re
 
-import numpy as np
 import scipy
 import torch
 import torch.utils.data
