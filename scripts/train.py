@@ -49,7 +49,7 @@ if __name__ == "__main__":
     np.random.seed(args.seed)
     torch.manual_seed(args.seed)
 
-    ds, model, optimizer, scheduler = load_checkpoint(args.checkpoint_path)
+    ds, model, optimizer, scheduler, history = load_checkpoint(args.checkpoint_path)
     train_loader, val_loader, test_loader = (
         torch.utils.data.DataLoader(
             ds_split,
@@ -82,13 +82,14 @@ if __name__ == "__main__":
             train_loader,
             val_loader,
             model,
-            args.epochs,
             lambda y, pred: (y - pred).square(),
             optimizer,
             scheduler,
+            history,
+            args.epochs,
         )
     except KeyboardInterrupt:
         if input("\nInterrupted, save model? [y/N] ").lower() not in ["y", "yes"]:
             exit(0)
 
-    update_checkpoint(args.checkpoint_path, ds, model, optimizer, scheduler)
+    update_checkpoint(args.checkpoint_path, ds, model, optimizer, scheduler, history)

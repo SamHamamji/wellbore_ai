@@ -5,6 +5,7 @@ import torch
 import torch.utils.data
 
 from src.metric import Metric
+from src.history import History
 
 def train_single_epoch(
     loader: torch.utils.data.DataLoader[tuple[torch.Tensor, torch.Tensor]],
@@ -45,10 +46,11 @@ def train(
     train_loader: torch.utils.data.DataLoader[tuple[torch.Tensor, torch.Tensor]],
     val_loader: torch.utils.data.DataLoader[tuple[torch.Tensor, torch.Tensor]],
     model: torch.nn.Module,
-    epochs: int,
     loss_fn: typing.Callable[[torch.Tensor, torch.Tensor], torch.Tensor],
     optimizer: torch.optim.Optimizer,
     scheduler: torch.optim.lr_scheduler.ReduceLROnPlateau,
+    history: History,
+    epochs: int,
 ):
     [lr] = scheduler.get_last_lr()
 
@@ -81,6 +83,13 @@ def train(
 
         print(f"Validation metrics ({testing_time:.1f}s): {val_metrics}")
         print()
+
+        history.append(
+            training_loss=train_metrics["loss"],
+            validation_loss=val_metrics["loss"],
+            learning_rate=lr,
+            epoch=scheduler.last_epoch,
+        )
 
         if lr != scheduler.get_last_lr()[0]:
             lr = scheduler.get_last_lr()[0]

@@ -10,7 +10,7 @@ parser.add_argument("--checkpoint_path", type=str, required=True)
 if __name__ == "__main__":
     args = parser.parse_args()
 
-    ds, model, optimizer, scheduler = load_checkpoint(args.checkpoint_path)
+    ds, model, optimizer, scheduler, _ = load_checkpoint(args.checkpoint_path)
 
     print(f"Dataset x transform: {ds.x_transform}")
     print(f"Dataset y bounds: {ds.bounds}")

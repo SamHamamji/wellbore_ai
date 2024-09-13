@@ -34,7 +34,7 @@ if __name__ == "__main__":
     }
 
     for path in args.paths:
-        ds, model, _, scheduler = load_checkpoint(path)
+        ds, model, _, scheduler, _ = load_checkpoint(path)
 
         print(f"Model {path}, epoch {scheduler.last_epoch}")
         for split_name, ds_split in zip(

@@ -20,7 +20,7 @@ if __name__ == "__main__":
     np.random.seed(args.seed)
     torch.manual_seed(args.seed)
 
-    ds, model, _, _ = load_checkpoint(args.checkpoint_path)
+    ds, model, _, _, _ = load_checkpoint(args.checkpoint_path)
 
     loader = torch.utils.data.DataLoader(
         ds, num_workers=8, batch_size=int(len(ds) * args.proportion)

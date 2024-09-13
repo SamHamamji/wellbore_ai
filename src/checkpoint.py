@@ -4,6 +4,7 @@ import torch
 
 from src.data.dataset import WaveDataset
 from src.pad_state_dicts import pad_model_state_dict, pad_optimizer_state_dict
+from src.history import History
 
 
 def get_ds_kwargs(ds: WaveDataset):
@@ -26,6 +27,7 @@ def new_checkpoint(
 ):
     new_checkpoint = {
         "ds_kwargs": get_ds_kwargs(ds),
+        "history_state_dict": {},
         "model_state_dict": model.state_dict(),
         "model_type": type(model),
         "optimizer_state_dict": optimizer.state_dict(),
@@ -50,6 +52,7 @@ def update_checkpoint(
     model: torch.nn.Module,
     optimizer: torch.optim.Optimizer,
     scheduler: torch.optim.lr_scheduler.LRScheduler,
+    history: History,
 ):
     checkpoint: dict = torch.load(path, weights_only=False)
 
@@ -57,6 +60,7 @@ def update_checkpoint(
     checkpoint["optimizer_state_dict"] = optimizer.state_dict()
     checkpoint["scheduler_state_dict"] = scheduler.state_dict()
     checkpoint["ds_kwargs"] = get_ds_kwargs(ds)
+    checkpoint["history_state_dict"] = history.state_dict()
 
     torch.save(checkpoint, path)
     print(f"\nUpdated checkpoint in {path}")
@@ -64,6 +68,8 @@ def update_checkpoint(
 
 def load_checkpoint(checkpoint_path: str):
     checkpoint: dict = torch.load(checkpoint_path, weights_only=False)
+
+    history = History(checkpoint.get("history_state_dict", {}))
 
     ds = WaveDataset(**checkpoint["ds_kwargs"])
     x_shape, y_shape = map(lambda t: t.shape, ds[0])
@@ -94,4 +100,4 @@ def load_checkpoint(checkpoint_path: str):
     if not isinstance(scheduler, torch.optim.lr_scheduler.ReduceLROnPlateau):
         raise ValueError("scheduler_type must be a subclass of ReduceLROnPlateau")
 
-    return ds, model, optimizer, scheduler
+    return ds, model, optimizer, scheduler, history
