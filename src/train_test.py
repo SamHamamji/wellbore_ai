@@ -32,7 +32,7 @@ def train_single_epoch(
         delay = time.time() - start_time
 
         print(
-            f"Batch loss: {loss.sum():<7f} [{i+1:{b_len}d} / {b_num:<{b_len}d}] | {delay:4f}s",
+            f"\033[KBatch loss: {loss.mean(0).sum(0):<.2f} [{i+1:{b_len}d} / {b_num:<{b_len}d}] | {delay:.2f}s",
             end="\r",
         )
 
@@ -66,6 +66,9 @@ def train(
         train_metrics = train_single_epoch(train_loader, model, loss_fn, optimizer)
         training_time = time.time() - initial_time
 
+        scheduler_metric = train_metrics["loss"]
+        scheduler.step(scheduler_metric)  # type: ignore\
+
         print(f"\033[KTraining metrics ({training_time:.1f}s): {train_metrics}")
         print("Validating...", end="\r")
 
@@ -78,9 +81,6 @@ def train(
 
         print(f"Validation metrics ({testing_time:.1f}s): {val_metrics}")
         print()
-
-        scheduler_metric = train_metrics["loss"]
-        scheduler.step(scheduler_metric)  # type: ignore\
 
         if lr != scheduler.get_last_lr()[0]:
             lr = scheduler.get_last_lr()[0]
