@@ -4,7 +4,7 @@ import numpy as np
 import torch.utils.data
 import plotly.graph_objects as go
 
-from src.checkpoint import load_checkpoint
+from src.checkpoint import Checkpoint
 
 
 parser = argparse.ArgumentParser()
@@ -20,21 +20,23 @@ if __name__ == "__main__":
     np.random.seed(args.seed)
     torch.manual_seed(args.seed)
 
-    ds, model, _, _, _ = load_checkpoint(args.checkpoint_path)
+    checkpoint = Checkpoint.load_from_path(args.checkpoint_path)
 
     loader = torch.utils.data.DataLoader(
-        ds, num_workers=8, batch_size=int(len(ds) * args.proportion)
+        checkpoint.ds,
+        num_workers=8,
+        batch_size=int(len(checkpoint.ds) * args.proportion),
     )
 
     x, y = next(iter(loader))
     x: torch.Tensor
     y: torch.Tensor
 
-    model.eval()
+    checkpoint.model.eval()
     with torch.no_grad():
-        pred = model(x)
+        pred = checkpoint.model(x)
 
-    for target_index, target_name in enumerate(ds.get_label_names()):
+    for target_index, target_name in enumerate(checkpoint.ds.get_label_names()):
         target_y = y[..., target_index]
         target_pred = pred[..., target_index]
 

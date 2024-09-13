@@ -51,6 +51,16 @@ class WaveDataset(torch.utils.data.Dataset):
 
         self.files = list(filter(lambda file: filter_files(file, bounds), self.files))
 
+    def get_kwargs(self):
+        return {
+            "data_dir": self.data_dir,
+            "target_length": self.target_length,
+            "x_transform": self.x_transform,
+            "label_type": self.label_type,
+            "bounds": self.bounds,
+            "dtype": self.dtype,
+        }
+
     def __len__(self):
         return len(self.files)
 

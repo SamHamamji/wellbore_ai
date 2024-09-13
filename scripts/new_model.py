@@ -1,10 +1,12 @@
 import argparse
+import os
 
 import numpy as np
 import torch.utils.data
 
-from src.checkpoint import new_checkpoint
+from src.checkpoint import Checkpoint
 from src.data.dataset import WaveDataset
+from src.history import History
 from src.models import models
 
 
@@ -22,6 +24,11 @@ parser.add_argument("--seed", type=int, default=0)
 
 if __name__ == "__main__":
     args = parser.parse_args()
+
+    if os.path.exists(args.checkpoint_path) and input(
+        f"File {args.checkpoint_path} already exists, replace? [y/N] "
+    ).lower() not in ["y", "yes"]:
+        exit(0)
 
     np.random.seed(args.seed)
     torch.manual_seed(args.seed)
@@ -54,5 +61,7 @@ if __name__ == "__main__":
         factor=1 - 1e-10,
         threshold=0,
     )
+    history = History()
 
-    new_checkpoint(args.checkpoint_path, ds, model, optimizer, scheduler)
+    checkpoint = Checkpoint(ds, model, optimizer, scheduler, history)
+    checkpoint.save(args.checkpoint_path)

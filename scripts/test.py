@@ -3,9 +3,9 @@ import argparse
 import numpy as np
 import torch.utils.data
 
+from src.checkpoint import Checkpoint
 from src.data.split import split_dataset
 from src.train_test import test
-from src.checkpoint import load_checkpoint
 from src.metric import Metric
 
 
@@ -34,12 +34,12 @@ if __name__ == "__main__":
     }
 
     for path in args.paths:
-        ds, model, _, scheduler, _ = load_checkpoint(path)
+        checkpoint = Checkpoint.load_from_path(path)
 
-        print(f"Model {path}, epoch {scheduler.last_epoch}")
+        print(f"Model {path}, epoch {checkpoint.scheduler.last_epoch}")
         for split_name, ds_split in zip(
             ("Train", "Validation", "Test"),
-            split_dataset(ds, args.splits),
+            split_dataset(checkpoint.ds, args.splits),
         ):
             if split_name == "Test" and not args.test:
                 continue
@@ -51,6 +51,6 @@ if __name__ == "__main__":
             )
 
             print(f"\t{split_name} metrics ({len(ds_split)} samples):")
-            for metric_name, result in test(loader, model, metrics).items():
+            for metric_name, result in test(loader, checkpoint.model, metrics).items():
                 print(f"\t\t{metric_name}: {result}")
             print()

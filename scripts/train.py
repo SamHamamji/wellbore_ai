@@ -3,7 +3,7 @@ import argparse
 import numpy as np
 import torch.utils.data
 
-from src.checkpoint import update_checkpoint, load_checkpoint
+from src.checkpoint import Checkpoint
 from src.data.split import split_dataset
 from src.metric import Metric
 from src.train_test import train, test
@@ -49,7 +49,7 @@ if __name__ == "__main__":
     np.random.seed(args.seed)
     torch.manual_seed(args.seed)
 
-    ds, model, optimizer, scheduler, history = load_checkpoint(args.checkpoint_path)
+    checkpoint = Checkpoint.load_from_path(args.checkpoint_path)
     train_loader, val_loader, test_loader = (
         torch.utils.data.DataLoader(
             ds_split,
@@ -57,19 +57,19 @@ if __name__ == "__main__":
             shuffle=True,
             num_workers=args.dataloader_workers,
         )
-        for ds_split in split_dataset(ds, args.splits)
+        for ds_split in split_dataset(checkpoint.ds, args.splits)
     )
 
     metrics: dict[str, Metric] = {
         "rmse": lambda y, pred: (y - pred).square().mean(0).sqrt(),
     }
-    print(f"Training metrics: {test(train_loader, model, metrics)}")
-    print(f"Validation metrics: {test(val_loader, model, metrics)}")
+    print(f"Training metrics: {test(train_loader, checkpoint.model, metrics)}")
+    print(f"Validation metrics: {test(val_loader, checkpoint.model, metrics)}")
 
-    update_training_params(args, optimizer, scheduler)
-    scheduler_state_dict = scheduler.state_dict()
+    update_training_params(args, checkpoint.optimizer, checkpoint.scheduler)
+    scheduler_state_dict = checkpoint.scheduler.state_dict()
     training_params = {
-        "lr": scheduler.get_last_lr()[0],
+        "lr": checkpoint.scheduler.get_last_lr()[0],
         "threshold": scheduler_state_dict["threshold"],
         "factor": scheduler_state_dict["factor"],
         "cooldown": scheduler_state_dict["cooldown"],
@@ -79,17 +79,17 @@ if __name__ == "__main__":
 
     try:
         train(
+            checkpoint,
             train_loader,
             val_loader,
-            model,
             lambda y, pred: (y - pred).square(),
-            optimizer,
-            scheduler,
-            history,
             args.epochs,
         )
     except KeyboardInterrupt:
-        if input("\nInterrupted, save model? [y/N] ").lower() not in ["y", "yes"]:
+        if input("\nInterrupted, save checkpoint.model? [y/N] ").lower() not in [
+            "y",
+            "yes",
+        ]:
             exit(0)
 
-    update_checkpoint(args.checkpoint_path, ds, model, optimizer, scheduler, history)
+    checkpoint.save(args.checkpoint_path)

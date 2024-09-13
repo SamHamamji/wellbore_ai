@@ -2,10 +2,10 @@ import typing
 
 
 class History:
-    def __init__(self, state_dict: dict[str, list]):
-        self._state_dict = state_dict
+    def __init__(self):
+        self._state_dict = {}
 
-    def append(self, **kwargs: dict[str, typing.Any]):
+    def append(self, **kwargs: typing.Any):
         if not self._state_dict:
             self._state_dict = {key: [] for key in kwargs}
 
@@ -14,3 +14,6 @@ class History:
 
     def state_dict(self):
         return self._state_dict
+
+    def load_state_dict(self, state_dict: dict[str, list]):
+        self._state_dict = state_dict

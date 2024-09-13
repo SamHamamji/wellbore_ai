@@ -5,7 +5,7 @@ import torch
 import torch.utils.data
 
 from src.metric import Metric
-from src.history import History
+from src.checkpoint import Checkpoint
 
 def train_single_epoch(
     loader: torch.utils.data.DataLoader[tuple[torch.Tensor, torch.Tensor]],
@@ -43,15 +43,16 @@ def train_single_epoch(
 
 
 def train(
+    checkpoint: Checkpoint,
     train_loader: torch.utils.data.DataLoader[tuple[torch.Tensor, torch.Tensor]],
     val_loader: torch.utils.data.DataLoader[tuple[torch.Tensor, torch.Tensor]],
-    model: torch.nn.Module,
     loss_fn: typing.Callable[[torch.Tensor, torch.Tensor], torch.Tensor],
-    optimizer: torch.optim.Optimizer,
-    scheduler: torch.optim.lr_scheduler.ReduceLROnPlateau,
-    history: History,
     epochs: int,
 ):
+    model = checkpoint.model
+    optimizer = checkpoint.optimizer
+    scheduler = checkpoint.scheduler
+    history = checkpoint.history
     [lr] = scheduler.get_last_lr()
 
     for _ in range(epochs):

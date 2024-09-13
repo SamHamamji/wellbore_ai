@@ -1,5 +1,3 @@
-import os
-
 import torch
 
 from src.data.dataset import WaveDataset
@@ -7,97 +5,72 @@ from src.pad_state_dicts import pad_model_state_dict, pad_optimizer_state_dict
 from src.history import History
 
 
-def get_ds_kwargs(ds: WaveDataset):
-    return {
-        "data_dir": ds.data_dir,
-        "target_length": ds.target_length,
-        "x_transform": ds.x_transform,
-        "label_type": ds.label_type,
-        "bounds": ds.bounds,
-        "dtype": ds.dtype,
-    }
+class Checkpoint:
+    def __init__(
+        self,
+        ds: WaveDataset,
+        model: torch.nn.Module,
+        optimizer: torch.optim.Optimizer,
+        scheduler: torch.optim.lr_scheduler.ReduceLROnPlateau,
+        history: History,
+    ):
+        self.ds = ds
+        self.model = model
+        self.optimizer = optimizer
+        self.scheduler = scheduler
+        self.history = history
 
+    def save(self, path: str):
+        file_content = {
+            "ds_kwargs": self.ds.get_kwargs(),
+            "history_state_dict": self.history.state_dict(),
+            "model_state_dict": self.model.state_dict(),
+            "optimizer_state_dict": self.optimizer.state_dict(),
+            "scheduler_state_dict": self.scheduler.state_dict(),
+            "model_type": type(self.model),
+            "optimizer_type": type(self.optimizer),
+            "scheduler_type": type(self.scheduler),
+        }
 
-def new_checkpoint(
-    path: str,
-    ds: WaveDataset,
-    model: torch.nn.Module,
-    optimizer: torch.optim.Optimizer,
-    scheduler: torch.optim.lr_scheduler.LRScheduler,
-):
-    new_checkpoint = {
-        "ds_kwargs": get_ds_kwargs(ds),
-        "history_state_dict": {},
-        "model_state_dict": model.state_dict(),
-        "model_type": type(model),
-        "optimizer_state_dict": optimizer.state_dict(),
-        "optimizer_type": type(optimizer),
-        "scheduler_state_dict": scheduler.state_dict(),
-        "scheduler_type": type(scheduler),
-    }
+        torch.save(file_content, path)
+        print()
+        print(f"Saved checkpoint to {path}")
 
-    print()
-    if os.path.exists(path) and input(
-        f"File {path} already exists, replace? [y/N] "
-    ).lower() not in ["y", "yes"]:
-        return
+    @staticmethod
+    def load_from_path(path: str) -> "Checkpoint":
+        file_content: dict = torch.load(path, weights_only=False)
 
-    torch.save(new_checkpoint, path)
-    print(f"Saved checkpoint to {path}")
+        model_type = file_content["model_type"]
+        optimizer_type = file_content["optimizer_type"]
+        scheduler_type = file_content["scheduler_type"]
 
+        model_state_dict = file_content["model_state_dict"]
+        optimizer_state_dict = file_content["optimizer_state_dict"]
+        history_state_dict = file_content.get("history_state_dict", {})
 
-def update_checkpoint(
-    path: str,
-    ds: WaveDataset,
-    model: torch.nn.Module,
-    optimizer: torch.optim.Optimizer,
-    scheduler: torch.optim.lr_scheduler.LRScheduler,
-    history: History,
-):
-    checkpoint: dict = torch.load(path, weights_only=False)
+        ds = WaveDataset(**file_content["ds_kwargs"])
+        x_shape, y_shape = map(lambda t: t.shape, ds[0])  # TODO: put in model directly
+        model: torch.nn.Module = model_type(x_shape, y_shape)
+        optimizer: torch.optim.Optimizer = optimizer_type(model.parameters())
+        scheduler: torch.optim.lr_scheduler.ReduceLROnPlateau = scheduler_type(
+            optimizer
+        )
+        history = History()
 
-    checkpoint["model_state_dict"] = model.state_dict()
-    checkpoint["optimizer_state_dict"] = optimizer.state_dict()
-    checkpoint["scheduler_state_dict"] = scheduler.state_dict()
-    checkpoint["ds_kwargs"] = get_ds_kwargs(ds)
-    checkpoint["history_state_dict"] = history.state_dict()
+        pad_model_state_dict(model_state_dict, model, 0.001)
+        if optimizer_state_dict["state"]:
+            pad_optimizer_state_dict(optimizer_state_dict, model, 0, 0)
 
-    torch.save(checkpoint, path)
-    print(f"\nUpdated checkpoint in {path}")
+        model.load_state_dict(model_state_dict)
+        optimizer.load_state_dict(optimizer_state_dict)
+        scheduler.load_state_dict(file_content["scheduler_state_dict"])
+        history.load_state_dict(history_state_dict)
 
+        if not isinstance(model, torch.nn.Module):
+            raise ValueError("model_type must be a subclass of Module")
+        if not isinstance(optimizer, torch.optim.Optimizer):
+            raise ValueError("optimizer_type must be a subclass of Optimizer")
+        if not isinstance(scheduler, torch.optim.lr_scheduler.ReduceLROnPlateau):
+            raise ValueError("scheduler_type must be a subclass of ReduceLROnPlateau")
 
-def load_checkpoint(checkpoint_path: str):
-    checkpoint: dict = torch.load(checkpoint_path, weights_only=False)
-
-    history = History(checkpoint.get("history_state_dict", {}))
-
-    ds = WaveDataset(**checkpoint["ds_kwargs"])
-    x_shape, y_shape = map(lambda t: t.shape, ds[0])
-
-    model_type: type[torch.nn.Module] = checkpoint["model_type"]
-    model = model_type(x_shape, y_shape)
-    model_state_dict = checkpoint["model_state_dict"]
-
-    optimizer_type = checkpoint["optimizer_type"]
-    optimizer: torch.optim.Optimizer = optimizer_type(model.parameters())
-    optimizer_state_dict = checkpoint["optimizer_state_dict"]
-
-    scheduler_type = checkpoint["scheduler_type"]
-    scheduler: torch.optim.lr_scheduler.ReduceLROnPlateau = scheduler_type(optimizer)
-
-    pad_model_state_dict(model_state_dict, model, 0.001)
-    if optimizer_state_dict["state"]:
-        pad_optimizer_state_dict(optimizer_state_dict, model, 0, 0)
-
-    scheduler.load_state_dict(checkpoint["scheduler_state_dict"])
-    model.load_state_dict(model_state_dict)
-    optimizer.load_state_dict(optimizer_state_dict)
-
-    if not isinstance(model, torch.nn.Module):
-        raise ValueError("model_type must be a subclass of Module")
-    if not isinstance(optimizer, torch.optim.Optimizer):
-        raise ValueError("optimizer_type must be a subclass of Optimizer")
-    if not isinstance(scheduler, torch.optim.lr_scheduler.ReduceLROnPlateau):
-        raise ValueError("scheduler_type must be a subclass of ReduceLROnPlateau")
-
-    return ds, model, optimizer, scheduler, history
+        return Checkpoint(ds, model, optimizer, scheduler, history)
