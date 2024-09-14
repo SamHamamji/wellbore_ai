@@ -1,3 +1,5 @@
+import json
+
 import torch
 
 from src.data.dataset import WaveDataset
@@ -74,3 +76,20 @@ class Checkpoint:
             raise ValueError("scheduler_type must be a subclass of ReduceLROnPlateau")
 
         return Checkpoint(ds, model, optimizer, scheduler, history)
+
+    def print(self):
+        print(f"Dataset kwargs: {self.ds.get_kwargs()}")
+        print()
+
+        print(f"Model: {self.model}")
+        print()
+
+        print("Parameters:")
+        for name, param in self.model.named_parameters():
+            print(f"  {name}, {param.shape}, {param.numel()}")
+        print()
+
+        print(
+            f"Scheduler state dict: {json.dumps(self.scheduler.state_dict(), indent=2)}"
+        )
+        print()
