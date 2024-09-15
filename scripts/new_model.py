@@ -25,11 +25,6 @@ parser.add_argument("--seed", type=int, default=0)
 if __name__ == "__main__":
     args = parser.parse_args()
 
-    if os.path.exists(args.checkpoint_path) and input(
-        f"File {args.checkpoint_path} already exists, replace? [y/N] "
-    ).lower() not in ["y", "yes"]:
-        exit(0)
-
     np.random.seed(args.seed)
     torch.manual_seed(args.seed)
 
@@ -52,9 +47,15 @@ if __name__ == "__main__":
     )
 
     x_shape, y_shape = map(lambda t: t.shape, ds[0])
-    print(f"Sample shapes: {x_shape=} {y_shape=}")
-
     model = model_type(x_shape, y_shape)
+    output_shape: torch.Size = model(torch.ones(x_shape)).shape
+
+    print(f"Sample shapes: {x_shape=} {y_shape=} {output_shape=}")
+    if os.path.exists(args.checkpoint_path) and input(
+        f"File {args.checkpoint_path} already exists, replace? [y/N] "
+    ).lower() not in ["y", "yes"]:
+        exit(0)
+
     optimizer = torch.optim.Adam(model.parameters(), lr=0)
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
         optimizer,
