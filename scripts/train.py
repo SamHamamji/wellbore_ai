@@ -54,7 +54,6 @@ if __name__ == "__main__":
         torch.utils.data.DataLoader(
             ds_split,
             batch_size=args.batch_size,
-            shuffle=True,
             num_workers=args.dataloader_workers,
         )
         for ds_split in split_dataset(checkpoint.ds, args.splits)
