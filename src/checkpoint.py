@@ -46,18 +46,19 @@ class Checkpoint:
         optimizer_type = file_content["optimizer_type"]
         scheduler_type = file_content["scheduler_type"]
 
-        model_state_dict = file_content["model_state_dict"]
-        optimizer_state_dict = file_content["optimizer_state_dict"]
-        history_state_dict = file_content.get("history_state_dict", {})
-
-        ds = WaveDataset(**file_content["ds_kwargs"])
-        x_shape, y_shape = map(lambda t: t.shape, ds[0])  # TODO: put in model directly
-        model: torch.nn.Module = model_type(x_shape, y_shape)
+        ds_kwargs = file_content["ds_kwargs"]
+        ds = WaveDataset(**ds_kwargs)
+        model: torch.nn.Module = model_type(*map(lambda t: t.shape, ds[0]))
         optimizer: torch.optim.Optimizer = optimizer_type(model.parameters())
         scheduler: torch.optim.lr_scheduler.ReduceLROnPlateau = scheduler_type(
             optimizer
         )
         history = History()
+
+        model_state_dict = file_content["model_state_dict"]
+        optimizer_state_dict = file_content["optimizer_state_dict"]
+        scheduler_state_dict = file_content["scheduler_state_dict"]
+        history_state_dict = file_content.get("history_state_dict", {})
 
         pad_model_state_dict(model_state_dict, model, 0.001)
         if optimizer_state_dict["state"]:
@@ -65,7 +66,7 @@ class Checkpoint:
 
         model.load_state_dict(model_state_dict)
         optimizer.load_state_dict(optimizer_state_dict)
-        scheduler.load_state_dict(file_content["scheduler_state_dict"])
+        scheduler.load_state_dict(scheduler_state_dict)
         history.load_state_dict(history_state_dict)
 
         if not isinstance(model, torch.nn.Module):
