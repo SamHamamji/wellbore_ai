@@ -12,7 +12,7 @@ from src.models import models
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--data_dir", type=str, required=True)
-parser.add_argument("--checkpoint_path", type=str, default=None)
+parser.add_argument("--path", type=str, default=None)
 parser.add_argument("--model_type", type=str, choices=models.keys())
 parser.add_argument(
     "--label_type", type=str, choices=WaveDataset.label_types.__args__, required=True
@@ -51,8 +51,8 @@ if __name__ == "__main__":
     output_shape: torch.Size = model(torch.ones(x_shape)).shape
 
     print(f"Sample shapes: {x_shape=} {y_shape=} {output_shape=}")
-    if os.path.exists(args.checkpoint_path) and input(
-        f"File {args.checkpoint_path} already exists, replace? [y/N] "
+    if os.path.exists(args.path) and input(
+        f"File {args.path} already exists, replace? [y/N] "
     ).lower() not in ["y", "yes"]:
         exit(0)
 
@@ -65,4 +65,4 @@ if __name__ == "__main__":
     history = History()
 
     checkpoint = Checkpoint(ds, model, optimizer, scheduler, history)
-    checkpoint.save(args.checkpoint_path)
+    checkpoint.save(args.path)

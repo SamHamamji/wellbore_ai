@@ -10,7 +10,7 @@ from src.train_test import train, test
 
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--checkpoint_path", type=str, default=None)
+parser.add_argument("--path", type=str, default=None)
 parser.add_argument("--seed", type=int, default=0)
 
 training_args = parser.add_argument_group("Training")
@@ -49,7 +49,7 @@ if __name__ == "__main__":
     np.random.seed(args.seed)
     torch.manual_seed(args.seed)
 
-    checkpoint = Checkpoint.load_from_path(args.checkpoint_path)
+    checkpoint = Checkpoint.load_from_path(args.path)
     train_loader, val_loader, test_loader = (
         torch.utils.data.DataLoader(
             ds_split,
@@ -91,4 +91,4 @@ if __name__ == "__main__":
         ]:
             exit(0)
 
-    checkpoint.save(args.checkpoint_path)
+    checkpoint.save(args.path)

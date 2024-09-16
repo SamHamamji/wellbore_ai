@@ -9,7 +9,7 @@ from src.checkpoint import Checkpoint
 
 parser = argparse.ArgumentParser()
 
-parser.add_argument("--checkpoint_path", type=str, required=True)
+parser.add_argument("--path", type=str, required=True)
 parser.add_argument("--proportion", type=float, default=1.0)
 parser.add_argument("--seed", type=int, default=0)
 
@@ -20,7 +20,7 @@ if __name__ == "__main__":
     np.random.seed(args.seed)
     torch.manual_seed(args.seed)
 
-    checkpoint = Checkpoint.load_from_path(args.checkpoint_path)
+    checkpoint = Checkpoint.load_from_path(args.path)
 
     loader = torch.utils.data.DataLoader(
         checkpoint.ds,

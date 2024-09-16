@@ -28,9 +28,9 @@ class History:
                 mode="lines",
                 name=metric,
                 showlegend=True,
-                yaxis=f"y2" if metric == "learning_rate" else None,
+                yaxis="y2" if metric == "learning_rate" else None,
             )
-            for i, metric in enumerate(self._state_dict)
+            for metric in self._state_dict
             if metric != "epoch"
         ]
 
