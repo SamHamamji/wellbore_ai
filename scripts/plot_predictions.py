@@ -3,8 +3,16 @@ import argparse
 import numpy as np
 import torch.utils.data
 import plotly.graph_objects as go
+import matplotlib
+import matplotlib.pyplot as plt
 
 from src.checkpoint import Checkpoint
+from src.data.split import split_dataset
+from src.metric import Metric
+
+matplotlib.use("gtk4cairo")
+matplotlib.rcParams["font.family"] = "Liberation Serif"
+matplotlib.rcParams["font.size"] = 16
 
 
 parser = argparse.ArgumentParser()
@@ -12,6 +20,57 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--path", type=str, required=True)
 parser.add_argument("--proportion", type=float, default=1.0)
 parser.add_argument("--seed", type=int, default=0)
+parser.add_argument("--splits", type=float, nargs="+", default=(0.7, 0.2, 0.1))
+parser.add_argument(
+    "--plotter", type=str, default="plotly", choices=("plotly", "matplotlib")
+)
+
+
+def plot_predictions_plotly(
+    y: torch.Tensor, pred: torch.Tensor, error: torch.Tensor, target_name: str
+):
+    boundaries = torch.stack([y.min(), y.max()])
+
+    fig = go.Figure(
+        [
+            go.Scatter(x=y, y=pred, mode="markers", showlegend=False),
+            go.Scatter(x=boundaries, y=boundaries, mode="lines", showlegend=False),
+        ],
+        layout={
+            "xaxis_title": f"True {target_name}",
+            "yaxis_title": f"Predicted {target_name}",
+        },
+    )
+    fig.show()
+
+    fig = go.Figure(
+        go.Histogram(x=error, histnorm="probability", showlegend=False),
+        layout={
+            "xaxis_title": "Relative error",
+            "yaxis_title": "Frequency",
+        },
+    )
+    fig.show()
+
+
+def plot_predictions_matplotlib(
+    y: torch.Tensor, pred: torch.Tensor, error: torch.Tensor, target_name: str
+):
+    boundaries = torch.stack([y.min(), y.max()])
+
+    fig, (ax1, ax2) = plt.subplots(ncols=2, figsize=(12, 6))
+
+    ax1.scatter(y, pred)
+    ax1.plot(boundaries, boundaries, "r--", label="y=x")
+    ax1.set_xlabel(f"True {target_name}")
+    ax1.set_ylabel(f"Predicted {target_name}")
+
+    ax2.hist(error, density=True)
+    ax2.set_xlabel(f"True {target_name}")
+    ax2.set_ylabel(f"Predicted {target_name}")
+
+    fig.subplots_adjust(bottom=0.1)
+    plt.show()
 
 
 if __name__ == "__main__":
@@ -22,11 +81,14 @@ if __name__ == "__main__":
 
     checkpoint = Checkpoint.load_from_path(args.path)
 
+    test_subset = split_dataset(checkpoint.ds, args.splits)[2]
     loader = torch.utils.data.DataLoader(
-        checkpoint.ds,
+        test_subset,
         num_workers=8,
-        batch_size=int(len(checkpoint.ds) * args.proportion),
+        batch_size=int(len(test_subset) * args.proportion),
     )
+
+    error_metric: Metric = lambda y, pred: ((pred - y) / y)
 
     x, y = next(iter(loader))
     x: torch.Tensor
@@ -36,21 +98,15 @@ if __name__ == "__main__":
     with torch.no_grad():
         pred = checkpoint.model(x)
 
-    for target_index, target_name in enumerate(checkpoint.ds.get_label_names()):
+    label_names = checkpoint.ds.get_label_names()
+
+    for target_index, target_name in enumerate(label_names):
         target_y = y[..., target_index]
         target_pred = pred[..., target_index]
 
-        boundaries = torch.stack([target_y.min(), target_y.max()])
+        error = error_metric(target_y, target_pred)
 
-        traces = [
-            go.Scatter(x=target_y, y=target_pred, mode="markers", showlegend=False),
-            go.Scatter(x=boundaries, y=boundaries, mode="lines", showlegend=False),
-        ]
-        fig = go.Figure(
-            traces,
-            layout={
-                "xaxis_title": f"True {target_name}",
-                "yaxis_title": f"Predicted {target_name}",
-            },
-        )
-        fig.show()
+        if args.plotter == "plotly":
+            plot_predictions_plotly(y, pred, error, target_name)
+        elif args.plotter == "matplotlib":
+            plot_predictions_matplotlib(y, pred, error, target_name)
