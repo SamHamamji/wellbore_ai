@@ -47,6 +47,11 @@ class Checkpoint:
         scheduler_type = file_content["scheduler_type"]
 
         ds_kwargs = file_content["ds_kwargs"]
+        model_state_dict = file_content["model_state_dict"]
+        optimizer_state_dict = file_content["optimizer_state_dict"]
+        scheduler_state_dict = file_content["scheduler_state_dict"]
+        history_state_dict = file_content.get("history_state_dict", {})
+
         ds = WaveDataset(**ds_kwargs)
         model: torch.nn.Module = model_type(*map(lambda t: t.shape, ds[0]))
         optimizer: torch.optim.Optimizer = optimizer_type(model.parameters())
@@ -54,11 +59,6 @@ class Checkpoint:
             optimizer
         )
         history = History()
-
-        model_state_dict = file_content["model_state_dict"]
-        optimizer_state_dict = file_content["optimizer_state_dict"]
-        scheduler_state_dict = file_content["scheduler_state_dict"]
-        history_state_dict = file_content.get("history_state_dict", {})
 
         pad_model_state_dict(model_state_dict, model, 0.001)
         if optimizer_state_dict["state"]:
