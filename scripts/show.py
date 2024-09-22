@@ -1,12 +1,16 @@
 import argparse
 
 from src.checkpoint import Checkpoint
+from src.plotter_engines import plotter_engines
 
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--path", type=str, required=True)
 parser.add_argument(
-    "--plotter", type=str, default="plotly", choices=("plotly", "matplotlib")
+    "--engine",
+    type=str,
+    default=plotter_engines.__args__[0],
+    choices=plotter_engines.__args__,
 )
 
 if __name__ == "__main__":
@@ -15,4 +19,4 @@ if __name__ == "__main__":
     checkpoint = Checkpoint.load_from_path(args.path)
 
     checkpoint.print()
-    checkpoint.history.plot(args.plotter)
+    checkpoint.history.plot(args.engine)

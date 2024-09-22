@@ -3,16 +3,12 @@ import argparse
 import numpy as np
 import torch.utils.data
 import plotly.graph_objects as go
-import matplotlib
 import matplotlib.pyplot as plt
 
 from src.checkpoint import Checkpoint
 from src.data.split import split_dataset
 from src.metric import Metric
-
-matplotlib.use("gtk4cairo")
-matplotlib.rcParams["font.family"] = "Liberation Serif"
-matplotlib.rcParams["font.size"] = 16
+from src.plotter_engines import plotter_engines
 
 
 parser = argparse.ArgumentParser()
@@ -22,7 +18,10 @@ parser.add_argument("--proportion", type=float, default=1.0)
 parser.add_argument("--seed", type=int, default=0)
 parser.add_argument("--splits", type=float, nargs="+", default=(0.7, 0.2, 0.1))
 parser.add_argument(
-    "--plotter", type=str, default="plotly", choices=("plotly", "matplotlib")
+    "--engine",
+    type=str,
+    default=plotter_engines.__args__[0],
+    choices=plotter_engines.__args__,
 )
 
 
@@ -106,7 +105,7 @@ if __name__ == "__main__":
 
         error = error_metric(target_y, target_pred)
 
-        if args.plotter == "plotly":
+        if args.engine == "plotly":
             plot_predictions_plotly(y, pred, error, target_name)
-        elif args.plotter == "matplotlib":
+        elif args.engine == "matplotlib":
             plot_predictions_matplotlib(y, pred, error, target_name)

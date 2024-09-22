@@ -2,10 +2,9 @@ import typing
 
 import plotly.graph_objects as go
 import matplotlib.pyplot as plt
-import matplotlib
 import mplcursors
 
-matplotlib.use("gtk4cairo")
+from src.plotter_engines import plotter_engines
 
 
 class History:
@@ -25,10 +24,10 @@ class History:
     def load_state_dict(self, state_dict: dict[str, list]):
         self._state_dict = state_dict
 
-    def plot(self, plotter: typing.Literal["plotly", "matplotlib"]):
-        if plotter == "plotly":
+    def plot(self, engine: plotter_engines):
+        if engine == "plotly":
             self.plot_plotly()
-        elif plotter == "matplotlib":
+        elif engine == "matplotlib":
             self.plot_matplotlib()
 
     def plot_plotly(self):
@@ -67,7 +66,7 @@ class History:
         fig.show()
 
     def plot_matplotlib(self):
-        fig, ax1 = plt.subplots()
+        _, ax1 = plt.subplots()
 
         epochs = self._state_dict["epoch"]
 
