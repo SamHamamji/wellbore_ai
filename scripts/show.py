@@ -5,6 +5,9 @@ from src.checkpoint import Checkpoint
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--path", type=str, required=True)
+parser.add_argument(
+    "--plotter", type=str, default="plotly", choices=("plotly", "matplotlib")
+)
 
 if __name__ == "__main__":
     args = parser.parse_args()
@@ -12,4 +15,4 @@ if __name__ == "__main__":
     checkpoint = Checkpoint.load_from_path(args.path)
 
     checkpoint.print()
-    checkpoint.history.plot()
+    checkpoint.history.plot(args.plotter)
