@@ -82,7 +82,12 @@ class Checkpoint:
         print(f"Dataset kwargs: {self.ds.get_kwargs()}")
         print()
 
+        X, y = next(iter(self.ds))
+        print(f"Sample shapes: {X.shape} {y.shape}")
         print(f"Model: {self.model}")
+        for _, layer in self.model.named_children():
+            X = layer(X)
+            print(f"{layer.__class__.__name__} output shape: {X.shape}")
         print()
 
         print("Parameters:")
