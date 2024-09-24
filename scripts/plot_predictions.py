@@ -64,9 +64,9 @@ def plot_predictions_matplotlib(
     ax1.set_xlabel(f"True {target_name}")
     ax1.set_ylabel(f"Predicted {target_name}")
 
-    ax2.hist(error, density=True)
-    ax2.set_xlabel(f"True {target_name}")
-    ax2.set_ylabel(f"Predicted {target_name}")
+    ax2.hist(error, bins=20, density=True)
+    ax2.set_xlabel(f"Relative {target_name} error")
+    ax2.set_ylabel(f"Occurrences")
 
     fig.subplots_adjust(bottom=0.1)
     plt.show()
