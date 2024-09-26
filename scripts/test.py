@@ -35,8 +35,11 @@ if __name__ == "__main__":
 
     for path in args.paths:
         checkpoint = Checkpoint.load_from_path(path)
+        param_num = sum(p.numel() for p in checkpoint.model.parameters())
 
-        print(f"Model {path}, epoch {checkpoint.scheduler.last_epoch}")
+        print(
+            f"Model {path}, {param_num} parameters, epoch {checkpoint.scheduler.last_epoch}"
+        )
         for split_name, ds_split in zip(
             ("Train", "Validation", "Test"),
             split_dataset(checkpoint.ds, args.splits),
