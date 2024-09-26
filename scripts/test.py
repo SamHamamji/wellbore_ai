@@ -16,6 +16,7 @@ parser.add_argument("--dataloader_workers", type=int, default=0)
 parser.add_argument("--batch_size", type=int, default=1)
 parser.add_argument("--test", action="store_true")
 parser.add_argument("--splits", type=float, nargs="+", default=(0.7, 0.2, 0.1))
+parser.add_argument("--sum_aggregate", action="store_true")
 parser.add_argument("--seed", type=int, default=0)
 
 
@@ -38,7 +39,7 @@ if __name__ == "__main__":
         param_num = sum(p.numel() for p in checkpoint.model.parameters())
 
         print(
-            f"Model {path}, {param_num} parameters, epoch {checkpoint.scheduler.last_epoch}"
+            f"Model {path}, {param_num:.2e} parameters, epoch {checkpoint.scheduler.last_epoch}"
         )
         for split_name, ds_split in zip(
             ("Train", "Validation", "Test"),
@@ -55,5 +56,7 @@ if __name__ == "__main__":
 
             print(f"\t{split_name} metrics ({len(ds_split)} samples):")
             for metric_name, result in test(loader, checkpoint.model, metrics).items():
+                if args.sum_aggregate:
+                    result = result.sum()
                 print(f"\t\t{metric_name}: {result}")
             print()
