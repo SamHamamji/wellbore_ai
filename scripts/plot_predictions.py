@@ -25,8 +25,8 @@ parser.add_argument(
 )
 
 
-def plot_predictions_plotly(
-    y: torch.Tensor, pred: torch.Tensor, error: torch.Tensor, target_name: str
+def get_predictions_figure_plotly(
+    y: torch.Tensor, pred: torch.Tensor, target_name: str
 ):
     boundaries = torch.stack([y.min(), y.max()])
 
@@ -40,36 +40,36 @@ def plot_predictions_plotly(
             "yaxis_title": f"Predicted {target_name}",
         },
     )
-    fig.show()
+    return fig
 
-    fig = go.Figure(
+
+def get_error_distribution_plotly(error: torch.Tensor, target_name: str):
+    return go.Figure(
         go.Histogram(x=error, histnorm="probability", showlegend=False),
         layout={
-            "xaxis_title": "Relative error",
-            "yaxis_title": "Frequency",
+            "xaxis_title": f"Relative {target_name} error",
+            "yaxis_title": "Occurrences",
         },
     )
-    fig.show()
 
 
-def plot_predictions_matplotlib(
-    y: torch.Tensor, pred: torch.Tensor, error: torch.Tensor, target_name: str
+def set_predictions_ax_matplotlib(
+    y: torch.Tensor, pred: torch.Tensor, target_name: str, ax: plt.Axes
 ):
     boundaries = torch.stack([y.min(), y.max()])
 
-    fig, (ax1, ax2) = plt.subplots(ncols=2, figsize=(12, 6))
+    ax.scatter(y, pred)
+    ax.plot(boundaries, boundaries, "r--", label="y=x")
+    ax.set_xlabel(f"True {target_name}")
+    ax.set_ylabel(f"Predicted {target_name}")
 
-    ax1.scatter(y, pred)
-    ax1.plot(boundaries, boundaries, "r--", label="y=x")
-    ax1.set_xlabel(f"True {target_name}")
-    ax1.set_ylabel(f"Predicted {target_name}")
 
-    ax2.hist(error, bins=20, density=True)
-    ax2.set_xlabel(f"Relative {target_name} error")
-    ax2.set_ylabel(f"Occurrences")
-
-    fig.subplots_adjust(bottom=0.1)
-    plt.show()
+def set_error_distribution_ax_matplotlib(
+    error: torch.Tensor, target_name: str, ax: plt.Axes
+):
+    ax.hist(error, bins=20, density=True)
+    ax.set_xlabel(f"Relative {target_name} error")
+    ax.set_ylabel("Occurrences")
 
 
 if __name__ == "__main__":
@@ -89,13 +89,13 @@ if __name__ == "__main__":
 
     error_metric: Metric = lambda y, pred: ((pred - y) / y)
 
-    x, y = next(iter(loader))
-    x: torch.Tensor
+    X, y = next(iter(loader))
+    X: torch.Tensor
     y: torch.Tensor
 
     checkpoint.model.eval()
     with torch.no_grad():
-        pred = checkpoint.model(x)
+        pred = checkpoint.model(X)
 
     label_names = checkpoint.ds.get_label_names()
 
@@ -104,8 +104,16 @@ if __name__ == "__main__":
         target_pred = pred[..., target_index]
 
         error = error_metric(target_y, target_pred)
+        assert isinstance(error, torch.Tensor)
 
         if args.engine == "plotly":
-            plot_predictions_plotly(y, pred, error, target_name)
+            get_predictions_figure_plotly(target_y, target_pred, target_name).show()
+            get_error_distribution_plotly(error, target_name).show()
         elif args.engine == "matplotlib":
-            plot_predictions_matplotlib(y, pred, error, target_name)
+            fig, (ax1, ax2) = plt.subplots(ncols=2, figsize=(12, 6))
+
+            set_predictions_ax_matplotlib(target_y, target_pred, target_name, ax1)
+            set_error_distribution_ax_matplotlib(error, target_name, ax2)
+
+            fig.subplots_adjust(bottom=0.1)
+            plt.show()
