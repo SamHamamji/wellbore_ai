@@ -5,6 +5,7 @@ import torch.utils.data
 
 from src.checkpoint import Checkpoint
 from src.data.split import split_dataset
+from src.data.dataset import WaveDataset
 from src.train_test import test
 from src.metric import Metric
 
@@ -16,6 +17,13 @@ parser.add_argument("--dataloader_workers", type=int, default=0)
 parser.add_argument("--batch_size", type=int, default=1)
 parser.add_argument("--test", action="store_true")
 parser.add_argument("--splits", type=float, nargs="+", default=(0.7, 0.2, 0.1))
+parser.add_argument(
+    "--noise_type",
+    type=str,
+    default=WaveDataset.noise_types.__args__[0],
+    choices=WaveDataset.noise_types.__args__,
+)
+parser.add_argument("--noise_std", type=float, default=None)
 parser.add_argument("--sum_aggregate", action="store_true")
 parser.add_argument("--seed", type=int, default=0)
 
@@ -35,7 +43,7 @@ if __name__ == "__main__":
     }
 
     for path in args.paths:
-        checkpoint = Checkpoint.load_from_path(path)
+        checkpoint = Checkpoint.load_from_path(path, {"noise_std": args.noise_std})
         param_num = sum(p.numel() for p in checkpoint.model.parameters())
 
         print(
@@ -56,7 +64,7 @@ if __name__ == "__main__":
 
             print(f"\t{split_name} metrics ({len(ds_split)} samples):")
             for metric_name, result in test(loader, checkpoint.model, metrics).items():
-                if args.sum_aggregate:
+                if isinstance(result, torch.Tensor) and args.sum_aggregate:
                     result = result.sum()
                 print(f"\t\t{metric_name}: {result}")
             print()

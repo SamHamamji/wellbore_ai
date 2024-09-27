@@ -28,22 +28,27 @@ def filter_files(file: str, bounds: tuple[range | None, ...]) -> bool:
 
 class WaveDataset(torch.utils.data.Dataset):
     label_types = typing.Literal["isotropic", "stiffness", "thomsen", "velocities"]
+    noise_types = typing.Literal["additive", "multiplicative"]
 
     def __init__(
         self,
         data_dir: str,
         target_length: int | None = None,
-        x_transform: torch.nn.Module | None = None,
         label_type: label_types = "isotropic",
         bounds: tuple[range | None, ...] = (),
+        noise_type: noise_types = "additive",
+        noise_std: float | None = None,
+        x_transform: torch.nn.Module | None = None,
         dtype: torch.dtype | None = None,
     ):
         self.data_dir = data_dir
         self.target_length = target_length
+        self.label_type = label_type
+        self.bounds = bounds
+        self.noise_std = noise_std
+        self.noise_type = noise_type
         self.x_transform = x_transform
         self.dtype = dtype
-        self.bounds = bounds
-        self.label_type = label_type
 
         self.files = list(
             map(lambda file: os.path.join(data_dir, file), os.listdir(data_dir))
@@ -61,9 +66,6 @@ class WaveDataset(torch.utils.data.Dataset):
             "dtype": self.dtype,
         }
 
-    def __len__(self):
-        return len(self.files)
-
     def get_label_names(self):
         if self.label_type == "isotropic":
             return ("Vs (m/s)", "Vp (m/s)")
@@ -73,27 +75,13 @@ class WaveDataset(torch.utils.data.Dataset):
             return ("Vs_0", "Vp_0", "Vs_90", "Vp_90", "Vp_45")
         raise NotImplementedError()
 
-    def __getitem__(self, index: int):
-        file = self.files[index]
-        data: dict = scipy.io.loadmat(file)
-
-        wave = (
-            torch.from_numpy(data["wavearray_param"]).T[1:].to(dtype=self.dtype)
-        )  # Drop time row
-
-        if self.target_length is not None:
-            wave = wave[..., : self.target_length]
-
-        if self.x_transform is not None:
-            with torch.no_grad():
-                wave: torch.Tensor = self.x_transform(wave)
-
+    def get_targets(self, data: dict, file_path: str):
         if self.label_type == "isotropic":
-            target = torch.Tensor((data["vs_r"].item(), data["vp_r"].item())).to(
+            return torch.Tensor((data["vs_r"].item(), data["vp_r"].item())).to(
                 dtype=self.dtype
             )
-        elif self.label_type == "stiffness":
-            target = torch.Tensor(
+        if self.label_type == "stiffness":
+            return torch.Tensor(
                 (
                     data["c11_r"].item(),
                     data["c13_r"].item(),
@@ -102,9 +90,8 @@ class WaveDataset(torch.utils.data.Dataset):
                     data["c66_r"].item(),
                 )
             )
-
-        elif self.label_type == "velocities":
-            match = re.match(wave_file_regex, file)
+        if self.label_type == "velocities":
+            match = re.match(wave_file_regex, file_path)
             assert match is not None
 
             density = data["dens_r"].item()
@@ -120,7 +107,7 @@ class WaveDataset(torch.utils.data.Dataset):
             )  # assumes strong anisotropy
             M = 0.5 * (c11 + c33) + c44 + M1**0.5
 
-            target = torch.Tensor(
+            return torch.Tensor(
                 (
                     data["vs_r"].item(),  # VS_0
                     data["vp_r"].item(),  # VP_0
@@ -129,8 +116,32 @@ class WaveDataset(torch.utils.data.Dataset):
                     (M / (2 * density)) ** 0.5,  # VP_45
                 )
             )
+        raise NotImplementedError()
 
-        else:
-            raise NotImplementedError()
+    def __getitem__(self, index: int):
+        file_path = self.files[index]
+        data: dict = scipy.io.loadmat(file_path)
+
+        wave = (
+            torch.from_numpy(data["wavearray_param"]).T[1:].to(dtype=self.dtype)
+        )  # Drop time row
+
+        if self.target_length is not None:
+            wave = wave[..., : self.target_length]
+
+        if self.noise_std is not None:
+            if self.noise_type == "additive":
+                wave.add_(torch.normal(0, self.noise_std, wave.shape))
+            if self.noise_type == "multiplicative":
+                wave.mul_(torch.normal(1, self.noise_std, wave.shape))
+
+        if self.x_transform is not None:
+            with torch.no_grad():
+                wave: torch.Tensor = self.x_transform(wave)
+
+        target = self.get_targets(data, file_path)
 
         return (wave, target)
+
+    def __len__(self):
+        return len(self.files)
