@@ -39,14 +39,17 @@ class Checkpoint:
         print(f"Saved checkpoint to {path}")
 
     @staticmethod
-    def load_from_path(path: str) -> "Checkpoint":
+    def load_from_path(path: str, extra_ds_kwargs: dict | None = None) -> "Checkpoint":
         file_content: dict = torch.load(path, weights_only=False)
 
         model_type = file_content["model_type"]
         optimizer_type = file_content["optimizer_type"]
         scheduler_type = file_content["scheduler_type"]
 
-        ds_kwargs = file_content["ds_kwargs"]
+        ds_kwargs = {
+            **file_content["ds_kwargs"],
+            **(extra_ds_kwargs if extra_ds_kwargs else {}),
+        }
         model_state_dict = file_content["model_state_dict"]
         optimizer_state_dict = file_content["optimizer_state_dict"]
         scheduler_state_dict = file_content["scheduler_state_dict"]
