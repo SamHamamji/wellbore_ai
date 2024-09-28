@@ -18,6 +18,9 @@ parser.add_argument("--proportion", type=float, default=1.0)
 parser.add_argument("--seed", type=int, default=0)
 parser.add_argument("--splits", type=float, nargs="+", default=(0.7, 0.2, 0.1))
 parser.add_argument(
+    "--layout", type=str, choices=("horizontal", "vertical"), default="horizontal"
+)
+parser.add_argument(
     "--engine",
     type=str,
     default=plotter_engines.__args__[0],
@@ -53,23 +56,15 @@ def get_error_distribution_plotly(error: torch.Tensor, target_name: str):
     )
 
 
-def set_predictions_ax_matplotlib(
-    y: torch.Tensor, pred: torch.Tensor, target_name: str, ax: plt.Axes
-):
+def set_predictions_ax_matplotlib(y: torch.Tensor, pred: torch.Tensor, ax: plt.Axes):
     boundaries = torch.stack([y.min(), y.max()])
 
     ax.scatter(y, pred)
     ax.plot(boundaries, boundaries, "r--", label="y=x")
-    ax.set_xlabel(f"True {target_name}")
-    ax.set_ylabel(f"Predicted {target_name}")
 
 
-def set_error_distribution_ax_matplotlib(
-    error: torch.Tensor, target_name: str, ax: plt.Axes
-):
+def set_error_distribution_ax_matplotlib(error: torch.Tensor, ax: plt.Axes):
     ax.hist(error, bins=20, density=True)
-    ax.set_xlabel(f"Relative {target_name} error")
-    ax.set_ylabel("Occurrences")
 
 
 if __name__ == "__main__":
@@ -98,6 +93,15 @@ if __name__ == "__main__":
         pred = checkpoint.model(X)
 
     label_names = checkpoint.ds.get_label_names()
+    if args.layout == "horizontal":
+        fig, axes = plt.subplots(2, len(label_names))
+    elif args.layout == "vertical":
+        fig, axes = plt.subplots(len(label_names), 2)
+        axes = axes.T
+    else:
+        raise ValueError(f"Invalid layout: {args.layout}")
+
+    print(axes.shape)
 
     for target_index, target_name in enumerate(label_names):
         target_y = y[..., target_index]
@@ -110,10 +114,19 @@ if __name__ == "__main__":
             get_predictions_figure_plotly(target_y, target_pred, target_name).show()
             get_error_distribution_plotly(error, target_name).show()
         elif args.engine == "matplotlib":
-            fig, (ax1, ax2) = plt.subplots(ncols=2, figsize=(12, 6))
+            set_predictions_ax_matplotlib(target_y, target_pred, axes[0, target_index])
+            axes[0, target_index].set_xlabel(f"True {target_name}")
 
-            set_predictions_ax_matplotlib(target_y, target_pred, target_name, ax1)
-            set_error_distribution_ax_matplotlib(error, target_name, ax2)
+            set_error_distribution_ax_matplotlib(error, axes[1, target_index])
+            axes[1, target_index].set_xlabel(f"Relative {target_name} error")
 
-            fig.subplots_adjust(bottom=0.1)
-            plt.show()
+            if args.layout == "vertical":
+                axes[0, target_index].set_ylabel(f"Predicted {target_name}")
+                axes[1, target_index].set_ylabel("Frequency")
+
+    if args.layout == "horizontal":
+        axes[0, 0].set_ylabel("Predicted values")
+        axes[1, 0].set_ylabel("Frequency")
+
+    fig.set_layout_engine("tight")
+    plt.show()
