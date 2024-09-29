@@ -65,6 +65,12 @@ def set_predictions_ax_matplotlib(y: torch.Tensor, pred: torch.Tensor, ax: plt.A
 
 def set_error_distribution_ax_matplotlib(error: torch.Tensor, ax: plt.Axes):
     ax.hist(error, bins=20, density=True)
+    ax.legend(
+        [f"Mean abs: {error.abs().mean():.3f}\nStandard dev: {error.std():.3f}"],
+        handlelength=0,
+        handletextpad=0,
+        prop={"size": 12},
+    )
 
 
 if __name__ == "__main__":
@@ -94,14 +100,12 @@ if __name__ == "__main__":
 
     label_names = checkpoint.ds.get_label_names()
     if args.layout == "horizontal":
-        fig, axes = plt.subplots(2, len(label_names))
+        fig, axes = plt.subplots(2, len(label_names), figsize=(4 * len(label_names), 8))
     elif args.layout == "vertical":
-        fig, axes = plt.subplots(len(label_names), 2)
+        fig, axes = plt.subplots(len(label_names), 2, figsize=(8, 4 * len(label_names)))
         axes = axes.T
     else:
         raise ValueError(f"Invalid layout: {args.layout}")
-
-    print(axes.shape)
 
     for target_index, target_name in enumerate(label_names):
         target_y = y[..., target_index]
