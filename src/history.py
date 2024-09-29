@@ -74,18 +74,18 @@ class History:
             if metric in ("epoch", "learning_rate"):
                 continue
             ax1.plot(epochs, self._state_dict[metric], "-", label=metric)
-        ax1.set_ylabel("Losses")
-        ax1.tick_params(axis="y")
 
         ax2 = ax1.twinx()
         ax2.plot(epochs, self._state_dict["learning_rate"], "g-", label="learning_rate")
-        ax2.set_ylabel("learning_rate")
-        # ax2.tick_params(axis="y")
-        ax2.set_yscale("log")
-        ax2.set_ylim(top=1, bottom=1e-6)
+        ax2.set_ylim(top=1e-1, bottom=7e-5)
 
+        ax1.set_ylabel("Losses")
+        ax1.set_yscale("log")
         ax1.set_xlabel("Epoch")
         ax1.legend(loc="upper left")
+
+        ax2.set_ylabel("Learning rate")
+        ax2.set_yscale("log")
         ax2.legend(loc="upper right")
 
         mplcursors.cursor(hover=True).connect(
