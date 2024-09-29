@@ -65,11 +65,15 @@ def set_predictions_ax_matplotlib(y: torch.Tensor, pred: torch.Tensor, ax: plt.A
 
 def set_error_distribution_ax_matplotlib(error: torch.Tensor, ax: plt.Axes):
     ax.hist(error, bins=20, density=True)
+    ax.set_ylim(top=ax.get_ylim()[1] * 1.3)
     ax.legend(
-        [f"Mean abs: {error.abs().mean():.3f}\nStandard dev: {error.std():.3f}"],
+        [
+            f"Mean absolute error: {error.abs().mean():.3f}\nStandard dev: {error.std():.3f}"
+        ],
         handlelength=0,
         handletextpad=0,
-        prop={"size": 12},
+        prop={"size": 16},
+        frameon=False,
     )
 
 
