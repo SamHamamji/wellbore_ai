@@ -73,20 +73,32 @@ class History:
         for metric in self._state_dict:
             if metric in ("epoch", "learning_rate"):
                 continue
-            ax1.plot(epochs, self._state_dict[metric], "-", label=metric)
+            ax1.plot(
+                epochs,
+                self._state_dict[metric],
+                "-",
+                label=metric.replace("_", " ").capitalize(),
+                linewidth=5,
+            )
 
         ax2 = ax1.twinx()
-        ax2.plot(epochs, self._state_dict["learning_rate"], "g-", label="learning_rate")
+        ax2.plot(
+            epochs,
+            self._state_dict["learning_rate"],
+            "g-",
+            label="Learning rate",
+            linewidth=5,
+        )
         ax2.set_ylim(top=1e-1, bottom=7e-5)
 
         ax1.set_ylabel("Losses")
         ax1.set_yscale("log")
         ax1.set_xlabel("Epoch")
-        ax1.legend(loc="upper left")
+        ax1.legend(frameon=False)
 
         ax2.set_ylabel("Learning rate")
         ax2.set_yscale("log")
-        ax2.legend(loc="upper right")
+        ax2.legend(frameon=False, loc="center right")
 
         mplcursors.cursor(hover=True).connect(
             "add", lambda sel: sel.annotation.set_text(sel.target)
