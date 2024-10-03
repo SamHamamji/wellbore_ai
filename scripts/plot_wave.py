@@ -14,6 +14,13 @@ parser.add_argument("--data_dir", type=str, required=True)
 parser.add_argument("--polar", action="store_true")
 parser.add_argument("--sample_index", type=int, default=0)
 parser.add_argument("--seed", type=int, default=0)
+parser.add_argument(
+    "--noise_type",
+    type=str,
+    default=WaveDataset.noise_types.__args__[0],
+    choices=WaveDataset.noise_types.__args__,
+)
+parser.add_argument("--noise_std", type=float, default=None)
 
 
 def plot_fft(wave: torch.Tensor, transform: torch.nn.Module):
@@ -63,6 +70,8 @@ if __name__ == "__main__":
         args.data_dir,
         dtype=torch.float32,
         target_length=1541,
+        noise_type=args.noise_type,
+        noise_std=args.noise_std,
     )
     transform = torch.nn.Sequential(
         torch.nn.LazyBatchNorm1d(),
