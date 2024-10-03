@@ -15,14 +15,15 @@ class AmplitudeFftCnn2d(torch.nn.Sequential):
         conv_padding = (1, 0)
 
         conv_layers = [
-            torch.nn.Conv2d(1, 2, kernel_size, 1, conv_padding),
-            torch.nn.MaxPool2d((2, 2), (2, 2)),
-            torch.nn.Conv2d(2, 4, kernel_size, 1, conv_padding),
-            torch.nn.MaxPool2d((2, 2), (2, 2)),
+            torch.nn.Conv2d(1, 4, kernel_size, 1, conv_padding),
+            torch.nn.MaxPool2d((3, 3), (3, 3)),
+            torch.nn.Conv2d(4, 8, kernel_size, 1, conv_padding),
+            torch.nn.ReLU(),
+            torch.nn.MaxPool2d((3, 3), (3, 3)),
         ]
 
         linear_layers = [
-            torch.nn.Linear(2232, 64),
+            torch.nn.Linear(656, 64),
             torch.nn.ReLU(),
             torch.nn.Linear(64, output_shape.numel()),
         ]
