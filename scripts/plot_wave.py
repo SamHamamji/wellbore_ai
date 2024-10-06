@@ -2,7 +2,7 @@ import argparse
 
 import torch.utils.data
 import dash
-import plotly.express as px
+import plotly.graph_objects as go
 
 from src.data.dataset import WaveDataset
 from src.layers import FftLayer, SelectIndexLayer
@@ -23,40 +23,69 @@ parser.add_argument(
 parser.add_argument("--noise_std", type=float, default=None)
 
 
+def get_offset(data: torch.Tensor, index: int):
+    if index == 0:
+        return torch.zeros(1, *data.shape[2:])
+    return data[:index].max(dim=1, keepdim=True).values.sum(0)
+
+
 def plot_fft(wave: torch.Tensor, transform: torch.nn.Module):
     with torch.no_grad():
         spect = transform(wave)
 
     sampling_interval = 6.63130e-06
     # pylint: disable=not-callable
-    frequencies = torch.fft.rfftfreq(wave.shape[-1], d=sampling_interval)
+    frequency = torch.fft.rfftfreq(wave.shape[-1], d=sampling_interval)
     time = torch.arange(wave.shape[-1]) * sampling_interval
 
     app = dash.Dash()
 
-    app.layout = []
-    for receiver in [0, 4, 8, 12]:
-        signal = px.line(
-            x=time, y=wave[receiver], labels={"x": "Time", "y": "Amplitude"}
+    signal_traces = []
+    channel_1_traces = []
+    channel_2_traces = []
+    for i in range(wave.shape[0]):
+        name = f"Receiver {i}"
+        signal_offset = get_offset(wave, i)
+        spect_offset = get_offset(spect, i)
+        signal_traces.append(go.Scatter(x=time, y=wave[i] + signal_offset, name=name))
+        channel_1_traces.append(
+            go.Scatter(x=frequency, y=spect[i, :, 0] + spect_offset[..., 0], name=name)
         )
-        channel_1 = px.line(
-            x=frequencies, y=spect[receiver, :, 0], labels={"x": "Frequency (Hz)"}
+        channel_2_traces.append(
+            go.Scatter(x=frequency, y=spect[i, :, 1] + spect_offset[..., 1], name=name)
         )
-        channel_2 = px.line(
-            x=frequencies, y=spect[receiver, :, 1], labels={"x": "Frequency (Hz)"}
-        )
-        div = dash.html.Div(
-            [
-                dash.html.H1(f"Receiver {receiver}"),
-                dash.html.H3("Raw signal"),
-                dash.dcc.Graph(figure=signal),
-                dash.html.H3("Channel 1 (Cosine / Amplitude)"),
-                dash.dcc.Graph(figure=channel_1),
-                dash.html.H3("Channel 2 (Sine / Phase)"),
-                dash.dcc.Graph(figure=channel_2),
-            ]
-        )
-        app.layout.append(div)
+
+    signals_plot = go.Figure(
+        signal_traces,
+        layout={
+            "title": "Raw signals",
+            "xaxis_title": "Time",
+            "yaxis_title": "Amplitude",
+        },
+    )
+    channel_1_plot = go.Figure(
+        channel_1_traces,
+        layout={
+            "title": "Channel 1 (Cosine / Amplitude)",
+            "xaxis_title": "Frequency (Hz)",
+            "yaxis_title": "Amplitude",
+        },
+    )
+    channel_2_plot = go.Figure(
+        channel_2_traces,
+        layout={
+            "title": "Channel 2 (Sine / Phase)",
+            "xaxis_title": "Frequency (Hz)",
+            "yaxis_title": "Amplitude",
+        },
+    )
+
+    app.layout = [
+        dash.html.H1("Raw signals"),
+        dash.dcc.Graph(figure=signals_plot),
+        dash.dcc.Graph(figure=channel_1_plot),
+        dash.dcc.Graph(figure=channel_2_plot),
+    ]
 
     app.run(debug=True)
 
