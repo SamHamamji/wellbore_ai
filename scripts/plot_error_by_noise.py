@@ -47,7 +47,7 @@ def show_plot_matplotlib(errors: torch.Tensor, noise_stds: torch.Tensor):
     plt.subplots()
 
     plt.plot(noise_stds, errors)
-    plt.xlabel("Noise std")
+    plt.xlabel(f"{args.noise_type} noise std".capitalize())
     plt.ylabel("MARE")
     plt.show()
 
@@ -85,8 +85,6 @@ if __name__ == "__main__":
         errors.append(error_metric(y, pred).item())
 
     errors = torch.tensor(errors)
-    print(std_range)
-    print(errors)
 
     if args.engine == "plotly":
         get_figure_plotly(errors, std_range).show()

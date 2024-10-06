@@ -88,7 +88,7 @@ if __name__ == "__main__":
     test_subset = split_dataset(checkpoint.ds, args.splits)[2]
     loader = torch.utils.data.DataLoader(
         test_subset,
-        num_workers=8,
+        num_workers=12,
         batch_size=int(len(test_subset) * args.proportion),
     )
 
