@@ -84,11 +84,10 @@ if __name__ == "__main__":
             lambda y, pred: (y - pred).square(),
             args.epochs,
         )
+        save_model = True
     except KeyboardInterrupt:
-        if input("\nInterrupted, save checkpoint.model? [y/N] ").lower() not in [
-            "y",
-            "yes",
-        ]:
-            exit(0)
+        save_model_prompt = input("\nInterrupted, save checkpoint.model? [y/N] ")
+        save_model = save_model_prompt.lower() in ["y", "yes"]
 
-    checkpoint.save(args.path)
+    if save_model:
+        checkpoint.save(args.path)
