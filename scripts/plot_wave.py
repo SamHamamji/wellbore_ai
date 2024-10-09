@@ -3,9 +3,16 @@ import argparse
 import torch.utils.data
 import dash
 import plotly.graph_objects as go
+import matplotlib.pyplot as plt
 
+from src.plotter_engines import plotter_engines
 from src.data.dataset import WaveDataset
-from src.layers import FftLayer, SelectIndexLayer
+from src.layers import FftLayer
+
+
+SAMPLING_INTERVAL = 6.63130e-06
+START_RECEIVER = 3.275
+END_RECEIVER = 3.275 + 1.828
 
 
 parser = argparse.ArgumentParser()
@@ -21,6 +28,12 @@ parser.add_argument(
     choices=WaveDataset.noise_types.__args__,
 )
 parser.add_argument("--noise_std", type=float, default=None)
+parser.add_argument(
+    "--engine",
+    type=str,
+    default=plotter_engines.__args__[0],
+    choices=plotter_engines.__args__,
+)
 
 
 def get_scaled_data(data: torch.Tensor, start: float, end: float):
@@ -37,64 +50,71 @@ def get_offset(data: torch.Tensor, index: int):
     return data.max(dim=1).values.mean(0) * index
 
 
-def plot_fft(wave: torch.Tensor, transform: torch.nn.Module):
-    with torch.no_grad():
-        spect = transform(wave)
-
-    sampling_interval = 6.63130e-06
-    start_receiver = 3.275
-    end_receiver = 3.275 + 1.828
-
-    # pylint: disable=not-callable
-    frequency = torch.fft.rfftfreq(wave.shape[-1], d=sampling_interval)
-    time = torch.arange(wave.shape[-1]) * sampling_interval
-
-    wave = get_scaled_data(wave, start_receiver, end_receiver)
-    spect[..., 0] = get_scaled_data(spect[..., 0], start_receiver, end_receiver)
-    spect[..., 1] = get_scaled_data(spect[..., 1], start_receiver, end_receiver)
-
-    signals_plot = go.Figure(
+def plot_wave_plotly(
+    wave: torch.Tensor,
+    time_scale: torch.Tensor,
+    spect: torch.Tensor,
+    frequency_scale: torch.Tensor,
+    polar: bool,
+):
+    figures = []
+    for data, scale, title, xlabel in zip(
+        [wave, spect[..., 0], spect[..., 1]],
+        [time_scale, frequency_scale, frequency_scale],
         [
-            go.Scatter(x=time, y=signal, name=f"Receiver {i}")
-            for i, signal in enumerate(wave)
+            "Raw signals",
+            f"Channel 1 {'Amplitude' if polar else 'Cosine'}",
+            f"Channel 2 {'Phase' if polar else 'Sine'}",
         ],
-        layout={
-            "title": "Raw signals",
-            "xaxis_title": "Time",
-            "yaxis_title": "Distance from source",
-        },
-    )
-    channel_1_plot = go.Figure(
-        [
-            go.Scatter(x=frequency, y=signal, name=f"Receiver {i}")
-            for i, signal in enumerate(spect[..., 0])
-        ],
-        layout={
-            "title": "Channel 1 (Cosine / Amplitude)",
-            "xaxis_title": "Frequency (Hz)",
-            "yaxis_title": "Distance from source",
-        },
-    )
-    channel_2_plot = go.Figure(
-        [
-            go.Scatter(x=frequency, y=signal, name=f"Receiver {i}")
-            for i, signal in enumerate(spect[..., 0])
-        ],
-        layout={
-            "title": "Channel 2 (Sine / Phase)",
-            "xaxis_title": "Frequency (Hz)",
-            "yaxis_title": "Distance from source",
-        },
-    )
+        ["Time", "Frequency (Hz)", "Frequency (Hz)"],
+    ):
+        figures.append(
+            go.Figure(
+                [
+                    go.Scatter(x=scale, y=signal, name=f"Receiver {i}")
+                    for i, signal in enumerate(data)
+                ],
+                layout={
+                    "title": title,
+                    "xaxis_title": xlabel,
+                    "yaxis_title": "Distance from source",
+                },
+            )
+        )
 
     app = dash.Dash()
     app.layout = [
         dash.html.H1("Wave plots"),
-        dash.dcc.Graph(figure=signals_plot),
-        dash.dcc.Graph(figure=channel_1_plot),
-        dash.dcc.Graph(figure=channel_2_plot),
+        *[dash.dcc.Graph(figure=figure) for figure in figures],
     ]
     app.run(debug=True)
+
+
+def plot_wave_matplotlib(
+    wave: torch.Tensor,
+    time_scale: torch.Tensor,
+    spect: torch.Tensor,
+    frequency_scale: torch.Tensor,
+    polar: bool,
+):
+    for data, scale, title, xlabel in zip(
+        [wave, spect[..., 0], spect[..., 1]],
+        [time_scale, frequency_scale, frequency_scale],
+        [
+            "Raw signals",
+            f"Channel 1 {'Amplitude' if polar else 'Cosine'}",
+            f"Channel 2 {'Phase' if polar else 'Sine'}",
+        ],
+        ["Time", "Frequency (Hz)", "Frequency (Hz)"],
+    ):
+        plt.figure()
+        for i, signal in enumerate(data):
+            plt.plot(scale, signal, label=f"Receiver {i}")
+        plt.title(title)
+        plt.xlabel(xlabel)
+        plt.ylabel("Distance from source")
+
+    plt.show()
 
 
 if __name__ == "__main__":
@@ -112,8 +132,21 @@ if __name__ == "__main__":
     transform = torch.nn.Sequential(
         torch.nn.LazyBatchNorm1d(),
         FftLayer(-1, -1, args.polar),
-        SelectIndexLayer((slice(None), slice(None), slice(None))),
     )
-    x, y = ds[args.sample_index]
+    wave, _ = ds[args.sample_index]
 
-    plot_fft(x, transform)
+    with torch.no_grad():
+        spect = transform(wave)
+
+    wave = get_scaled_data(wave, START_RECEIVER, END_RECEIVER)
+    spect[..., 0] = get_scaled_data(spect[..., 0], START_RECEIVER, END_RECEIVER)
+    spect[..., 1] = get_scaled_data(spect[..., 1], START_RECEIVER, END_RECEIVER)
+
+    # pylint: disable=not-callable
+    frequency_scale = torch.fft.rfftfreq(wave.shape[-1], d=SAMPLING_INTERVAL)
+    time_scale = torch.arange(wave.shape[-1]) * SAMPLING_INTERVAL
+
+    if args.engine == "plotly":
+        plot_wave_plotly(wave, time_scale, spect, frequency_scale, args.polar)
+    else:
+        plot_wave_matplotlib(wave, time_scale, spect, frequency_scale, args.polar)
