@@ -23,10 +23,18 @@ parser.add_argument(
 parser.add_argument("--noise_std", type=float, default=None)
 
 
+def get_scaled_data(data: torch.Tensor, start: float, end: float):
+    offset_per_receiver = data.max(dim=1).values.mean(0)
+    offset = torch.arange(0, data.shape[0]) * offset_per_receiver
+    data = data + offset.expand(data.T.shape).T
+
+    return data * (end - start) / offset_per_receiver / (data.shape[0] - 1) + start
+
+
 def get_offset(data: torch.Tensor, index: int):
     if index == 0:
         return torch.zeros(1, *data.shape[2:])
-    return data[:index].max(dim=1, keepdim=True).values.sum(0)
+    return data.max(dim=1).values.mean(0) * index
 
 
 def plot_fft(wave: torch.Tensor, transform: torch.nn.Module):
@@ -34,59 +42,58 @@ def plot_fft(wave: torch.Tensor, transform: torch.nn.Module):
         spect = transform(wave)
 
     sampling_interval = 6.63130e-06
+    start_receiver = 3.275
+    end_receiver = 3.275 + 1.828
+
     # pylint: disable=not-callable
     frequency = torch.fft.rfftfreq(wave.shape[-1], d=sampling_interval)
     time = torch.arange(wave.shape[-1]) * sampling_interval
 
-    app = dash.Dash()
-
-    signal_traces = []
-    channel_1_traces = []
-    channel_2_traces = []
-    for i in range(wave.shape[0]):
-        name = f"Receiver {i}"
-        signal_offset = get_offset(wave, i)
-        spect_offset = get_offset(spect, i)
-        signal_traces.append(go.Scatter(x=time, y=wave[i] + signal_offset, name=name))
-        channel_1_traces.append(
-            go.Scatter(x=frequency, y=spect[i, :, 0] + spect_offset[..., 0], name=name)
-        )
-        channel_2_traces.append(
-            go.Scatter(x=frequency, y=spect[i, :, 1] + spect_offset[..., 1], name=name)
-        )
+    wave = get_scaled_data(wave, start_receiver, end_receiver)
+    spect[..., 0] = get_scaled_data(spect[..., 0], start_receiver, end_receiver)
+    spect[..., 1] = get_scaled_data(spect[..., 1], start_receiver, end_receiver)
 
     signals_plot = go.Figure(
-        signal_traces,
+        [
+            go.Scatter(x=time, y=signal, name=f"Receiver {i}")
+            for i, signal in enumerate(wave)
+        ],
         layout={
             "title": "Raw signals",
             "xaxis_title": "Time",
-            "yaxis_title": "Amplitude",
+            "yaxis_title": "Distance from source",
         },
     )
     channel_1_plot = go.Figure(
-        channel_1_traces,
+        [
+            go.Scatter(x=frequency, y=signal, name=f"Receiver {i}")
+            for i, signal in enumerate(spect[..., 0])
+        ],
         layout={
             "title": "Channel 1 (Cosine / Amplitude)",
             "xaxis_title": "Frequency (Hz)",
-            "yaxis_title": "Amplitude",
+            "yaxis_title": "Distance from source",
         },
     )
     channel_2_plot = go.Figure(
-        channel_2_traces,
+        [
+            go.Scatter(x=frequency, y=signal, name=f"Receiver {i}")
+            for i, signal in enumerate(spect[..., 0])
+        ],
         layout={
             "title": "Channel 2 (Sine / Phase)",
             "xaxis_title": "Frequency (Hz)",
-            "yaxis_title": "Amplitude",
+            "yaxis_title": "Distance from source",
         },
     )
 
+    app = dash.Dash()
     app.layout = [
-        dash.html.H1("Raw signals"),
+        dash.html.H1("Wave plots"),
         dash.dcc.Graph(figure=signals_plot),
         dash.dcc.Graph(figure=channel_1_plot),
         dash.dcc.Graph(figure=channel_2_plot),
     ]
-
     app.run(debug=True)
 
 
