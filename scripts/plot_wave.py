@@ -77,7 +77,7 @@ def plot_wave_plotly(
                 layout={
                     "title": title,
                     "xaxis_title": xlabel,
-                    "yaxis_title": "Distance from source",
+                    "yaxis_title": "Distance from source (m)",
                 },
             )
         )
@@ -105,14 +105,14 @@ def plot_wave_matplotlib(
             f"Channel 1 {'Amplitude' if polar else 'Cosine'}",
             f"Channel 2 {'Phase' if polar else 'Sine'}",
         ],
-        ["Time", "Frequency (Hz)", "Frequency (Hz)"],
+        ["Time (s)", "Frequency (Hz)", "Frequency (Hz)"],
     ):
         plt.figure()
         for i, signal in enumerate(data):
             plt.plot(scale, signal, label=f"Receiver {i}")
         plt.title(title)
         plt.xlabel(xlabel)
-        plt.ylabel("Distance from source")
+        plt.ylabel("Distance from source (m)")
 
     plt.show()
 
