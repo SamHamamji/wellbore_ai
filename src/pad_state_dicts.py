@@ -2,9 +2,10 @@ import torch
 
 
 def pad_tensor(tensor: torch.Tensor, target_shape: torch.Size, value: float):
-    padding = [0] * 2 * len(target_shape)
+    padding = [0] * 2 * len(tensor.shape)
     for i, target_len in enumerate(target_shape):
-        padding[-1 - 2 * i] = target_len - tensor.shape[i]
+        if i < len(tensor.shape):
+            padding[-1 - 2 * i] = target_len - tensor.shape[i]
 
     return torch.nn.functional.pad(tensor, padding, mode="constant", value=value)
 
