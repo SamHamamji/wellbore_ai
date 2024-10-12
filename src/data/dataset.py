@@ -1,4 +1,5 @@
 import glob
+import os
 import re
 import typing
 
@@ -54,10 +55,11 @@ class WaveDataset(torch.utils.data.Dataset):
 
         self.files = list(
             filter(
-                lambda file: filter_file(file, bounds),
-                glob.iglob(f"{data_dir}**", recursive=True),
+                lambda file: filter_file(file.split("/")[-1], bounds),
+                glob.iglob(os.path.join(data_dir, "**"), recursive=True),
             )
         )
+        assert len(self.files) > 0
 
     def get_kwargs(self):
         return {
