@@ -28,7 +28,9 @@ def filter_files(file: str, bounds: tuple[range | None, ...]) -> bool:
 
 class WaveDataset(torch.utils.data.Dataset):
     label_types = typing.Literal["isotropic", "stiffness", "thomsen", "velocities"]
-    noise_types = typing.Literal["additive", "multiplicative"]
+    noise_types = typing.Literal[
+        "noiseless", "additive", "additive_relative", "multiplicative"
+    ]
 
     def __init__(
         self,
@@ -36,8 +38,8 @@ class WaveDataset(torch.utils.data.Dataset):
         target_length: int | None = None,
         label_type: label_types = "isotropic",
         bounds: tuple[range | None, ...] = (),
-        noise_type: noise_types = "additive",
-        noise_std: float | None = None,
+        noise_type: noise_types = "noiseless",
+        noise_std: float = 0.0,
         x_transform: torch.nn.Module | None = None,
         dtype: torch.dtype | None = None,
     ):
@@ -72,50 +74,91 @@ class WaveDataset(torch.utils.data.Dataset):
         if self.label_type == "stiffness":
             return ("c11", "c13", "c33", "c44", "c66")
         if self.label_type == "velocities":
-            return ("Vs_0", "Vp_0", "Vs_90", "Vp_90", "Vp_45")
+            return (
+                "Vs$_{0}$ (m/s)",
+                "Vp$_{0}$ (m/s)",
+                "Vs$_{90}$ (m/s)",
+                "Vp$_{90}$ (m/s)",
+                "Vp$_{45}$ (m/s)",
+            )
         raise NotImplementedError()
+
+    def get_thomsens_params(self, file_path: str):
+        match = re.match(wave_file_regex, file_path)
+        assert match is not None
+        print(match.groups())
+        return match.groups()[2:]
+
+    def get_stiffnesses(self, data: dict) -> tuple[float, float, float, float, float]:
+        return (
+            data["c11_r"].item() * 1e9,
+            data["c13_r"].item() * 1e9,
+            data["c33_r"].item() * 1e9,
+            data["c44_r"].item() * 1e9,
+            data["c66_r"].item() * 1e9,
+        )
+
+    def get_stiffnesses_iso(
+        self, data: dict
+    ) -> tuple[float, float, float, float, float]:
+        density = data["dens_r"].item()
+        Vs = data["vs_r"].item()
+        Vp = data["vp_r"].item()
+        c33 = density * Vp**2
+        c44 = density * Vs**2
+        return (
+            c33,
+            abs(c33 - c44) - c44,
+            c33,
+            c44,
+            c44,
+        )
+
+    def get_velocities(
+        self, data: dict, file_path: str
+    ) -> tuple[float, float, float, float, float]:
+        thomsens_params = self.get_thomsens_params(file_path)
+        density = data["dens_r"].item()
+        c11, _, c33, c44, c66 = self.get_stiffnesses(data)
+        M1 = (
+            0.25 * (c11 - c33) ** 2
+            + 2 * c33 * (c33 - c44) * float(thomsens_params[2])
+            + (c33 - c44) ** 2
+        )  # assumes strong anisotropy
+        M = 0.5 * (c11 + c33) + c44 + M1**0.5
+
+        return (
+            data["vs_r"].item(),  # VS_0
+            data["vp_r"].item(),  # VP_0
+            (c66 / density) ** 0.5,  # VS_90
+            (c11 / density) ** 0.5,  # VP_90
+            (M / (2 * density)) ** 0.5,  # VP_45
+        )
+
+    def get_velocities_iso(
+        self, data: dict
+    ) -> tuple[float, float, float, float, float]:
+        Vs = data["vs_r"].item()
+        Vp = data["vp_r"].item()
+        return (
+            Vs,
+            Vp,
+            Vs,
+            Vp,
+            Vp,
+        )
 
     def get_targets(self, data: dict, file_path: str):
         if self.label_type == "isotropic":
-            return torch.Tensor((data["vs_r"].item(), data["vp_r"].item())).to(
-                dtype=self.dtype
-            )
+            return torch.Tensor((data["vs_r"].item(), data["vp_r"].item()))
         if self.label_type == "stiffness":
-            return torch.Tensor(
-                (
-                    data["c11_r"].item(),
-                    data["c13_r"].item(),
-                    data["c33_r"].item(),
-                    data["c44_r"].item(),
-                    data["c66_r"].item(),
-                )
-            )
+            if "c11_r" not in data:
+                return torch.Tensor(self.get_stiffnesses_iso(data))
+            return torch.Tensor(self.get_stiffnesses(data))
         if self.label_type == "velocities":
-            match = re.match(wave_file_regex, file_path)
-            assert match is not None
-
-            density = data["dens_r"].item()
-            c11 = data["c11_r"].item() * 1e9
-            c33 = data["c33_r"].item() * 1e9
-            c44 = data["c44_r"].item() * 1e9
-            c66 = data["c66_r"].item() * 1e9
-
-            M1 = (
-                0.25 * (c11 - c33) ** 2
-                + 2 * c33 * (c33 - c44) * float(match.groups()[4])
-                + (c33 - c44) ** 2
-            )  # assumes strong anisotropy
-            M = 0.5 * (c11 + c33) + c44 + M1**0.5
-
-            return torch.Tensor(
-                (
-                    data["vs_r"].item(),  # VS_0
-                    data["vp_r"].item(),  # VP_0
-                    (c66 / density) ** 0.5,  # VS_90
-                    (c11 / density) ** 0.5,  # VP_90
-                    (M / (2 * density)) ** 0.5,  # VP_45
-                )
-            )
+            if "c11_r" not in data:
+                return torch.Tensor(self.get_velocities_iso(data))
+            return torch.Tensor(self.get_velocities(data, file_path))
         raise NotImplementedError()
 
     def __getitem__(self, index: int):
@@ -129,17 +172,19 @@ class WaveDataset(torch.utils.data.Dataset):
         if self.target_length is not None:
             wave = wave[..., : self.target_length]
 
-        if self.noise_std is not None:
-            if self.noise_type == "additive":
-                wave.add_(torch.normal(0, self.noise_std, wave.shape))
-            if self.noise_type == "multiplicative":
-                wave.mul_(torch.normal(1, self.noise_std, wave.shape))
+        if self.noise_type == "additive":
+            wave.add_(torch.normal(0, self.noise_std, wave.shape))
+        if self.noise_type == "additive_relative":
+            peak = wave.abs().max().item()
+            wave.add_(torch.normal(0, self.noise_std * peak, wave.shape))
+        if self.noise_type == "multiplicative":
+            wave.mul_(torch.normal(1, self.noise_std, wave.shape))
 
         if self.x_transform is not None:
             with torch.no_grad():
                 wave: torch.Tensor = self.x_transform(wave)
 
-        target = self.get_targets(data, file_path)
+        target = self.get_targets(data, file_path).to(dtype=self.dtype)
 
         return (wave, target)
 
