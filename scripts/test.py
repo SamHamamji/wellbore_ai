@@ -43,7 +43,10 @@ if __name__ == "__main__":
     }
 
     for path in args.paths:
-        checkpoint = Checkpoint.load_from_path(path, {"noise_std": args.noise_std})
+        checkpoint = Checkpoint.load_from_path(
+            path,
+            {"noise_type": args.noise_type, "noise_std": args.noise_std},
+        )
         param_num = sum(p.numel() for p in checkpoint.model.parameters())
 
         print(
