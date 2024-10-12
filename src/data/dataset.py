@@ -1,4 +1,4 @@
-import os
+import glob
 import re
 import typing
 
@@ -12,7 +12,7 @@ wave_file_regex = f".*(?:ISO|VTI)_{target_variables}_MP_dipole.mat$"
 wave_file_regex = re.compile(wave_file_regex)
 
 
-def filter_files(file: str, bounds: tuple[range | None, ...]) -> bool:
+def filter_file(file: str, bounds: tuple[range | None, ...]) -> bool:
     match = re.match(wave_file_regex, file)
     if match is None:
         return False
@@ -53,10 +53,11 @@ class WaveDataset(torch.utils.data.Dataset):
         self.dtype = dtype
 
         self.files = list(
-            map(lambda file: os.path.join(data_dir, file), os.listdir(data_dir))
+            filter(
+                lambda file: filter_file(file, bounds),
+                glob.iglob(f"{data_dir}**", recursive=True),
+            )
         )
-
-        self.files = list(filter(lambda file: filter_files(file, bounds), self.files))
 
     def get_kwargs(self):
         return {
@@ -86,7 +87,6 @@ class WaveDataset(torch.utils.data.Dataset):
     def get_thomsens_params(self, file_path: str):
         match = re.match(wave_file_regex, file_path)
         assert match is not None
-        print(match.groups())
         return match.groups()[2:]
 
     def get_stiffnesses(self, data: dict) -> tuple[float, float, float, float, float]:
@@ -140,13 +140,7 @@ class WaveDataset(torch.utils.data.Dataset):
     ) -> tuple[float, float, float, float, float]:
         Vs = data["vs_r"].item()
         Vp = data["vp_r"].item()
-        return (
-            Vs,
-            Vp,
-            Vs,
-            Vp,
-            Vp,
-        )
+        return (Vs, Vp, Vs, Vp, Vp)
 
     def get_targets(self, data: dict, file_path: str):
         if self.label_type == "isotropic":
