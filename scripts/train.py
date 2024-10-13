@@ -12,6 +12,7 @@ from src.train_test import train, test
 parser = argparse.ArgumentParser()
 parser.add_argument("--path", type=str, default=None)
 parser.add_argument("--seed", type=int, default=0)
+parser.add_argument("--test_first", action="store_true")
 
 training_args = parser.add_argument_group("Training")
 training_args.add_argument("--epochs", type=int, required=True)
@@ -59,12 +60,6 @@ if __name__ == "__main__":
         for ds_split in split_dataset(checkpoint.ds, args.splits)
     )
 
-    metrics: dict[str, Metric] = {
-        "rmse": lambda y, pred: (y - pred).square().mean(0).sqrt(),
-    }
-    print(f"Training metrics: {test(train_loader, checkpoint.model, metrics)}")
-    print(f"Validation metrics: {test(val_loader, checkpoint.model, metrics)}")
-
     update_training_params(args, checkpoint.optimizer, checkpoint.scheduler)
     scheduler_state_dict = checkpoint.scheduler.state_dict()
     training_params = {
@@ -74,7 +69,15 @@ if __name__ == "__main__":
         "cooldown": scheduler_state_dict["cooldown"],
         "patience": scheduler_state_dict["patience"],
     }
-    print(f"Training parameters: {training_params}", end="\n\n")
+    print(f"Training parameters: {training_params}")
+
+    if args.test_first:
+        metrics: dict[str, Metric] = {
+            "rmse": lambda y, pred: (y - pred).square().mean(0).sqrt()
+        }
+        print(f"Training metrics: {test(train_loader, checkpoint.model, metrics)}")
+        print(f"Validation metrics: {test(val_loader, checkpoint.model, metrics)}")
+    print()
 
     try:
         train(
@@ -86,7 +89,7 @@ if __name__ == "__main__":
         )
         save_model = True
     except KeyboardInterrupt:
-        save_model_prompt = input("\nInterrupted, save checkpoint.model? [y/N] ")
+        save_model_prompt = input("\nInterrupted training, save model? [y/N] ")
         save_model = save_model_prompt.lower() in ["y", "yes"]
 
     if save_model:
