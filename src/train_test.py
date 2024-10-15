@@ -7,6 +7,7 @@ import torch.utils.data
 from src.metric import Metric
 from src.checkpoint import Checkpoint
 
+
 def train_single_epoch(
     loader: torch.utils.data.DataLoader[tuple[torch.Tensor, torch.Tensor]],
     model: torch.nn.Module,
@@ -57,13 +58,16 @@ def train(
 
     for _ in range(epochs):
         state_dict = scheduler.state_dict()
-        if state_dict["cooldown_counter"] != 0:
-            epoch_state = f"{state_dict["cooldown_counter"]}/{state_dict["cooldown"]} cooldown"
-        else:
-            epoch_state = f"{state_dict["num_bad_epochs"]}/{state_dict["patience"]} bad epochs"
+        epoch_state = (
+            f"{state_dict['cooldown_counter']}/{state_dict['cooldown']} cooldown"
+            if state_dict["cooldown_counter"] != 0
+            else f"{state_dict['num_bad_epochs']}/{state_dict['patience']} bad epochs"
+        )
 
         print(f"Epoch {scheduler.last_epoch}:")
-        print(f"Best loss: {state_dict["best"]} | {epoch_state} | {lr:.2e} learning rate")
+        print(
+            f"Best loss: {state_dict["best"]} | {epoch_state} | {lr:.2e} learning rate"
+        )
 
         initial_time = time.time()
         train_metrics = train_single_epoch(train_loader, model, loss_fn, optimizer)
