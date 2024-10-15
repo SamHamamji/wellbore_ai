@@ -9,14 +9,21 @@ from src.data.dataset import WaveDataset
 from src.train_test import test
 from src.metric import Metric
 
+ds_splits = ("train", "validation", "test")
 
 parser = argparse.ArgumentParser()
 
 parser.add_argument("--paths", type=str, required=True, nargs="+")
+parser.add_argument("--sum_aggregate", action="store_true")
+for ds_split in ds_splits:
+    parser.add_argument(f"--{ds_split}", action="store_true")
+
+# Dataloader
 parser.add_argument("--dataloader_workers", type=int, default=0)
 parser.add_argument("--batch_size", type=int, default=1)
-parser.add_argument("--test", action="store_true")
 parser.add_argument("--splits", type=float, nargs="+", default=(0.7, 0.2, 0.1))
+
+# Dataset
 parser.add_argument("--data_dir", type=str, default=None)
 parser.add_argument(
     "--noise_type",
@@ -25,7 +32,6 @@ parser.add_argument(
     choices=WaveDataset.noise_types.__args__,
 )
 parser.add_argument("--noise_std", type=float, default=None)
-parser.add_argument("--sum_aggregate", action="store_true")
 parser.add_argument("--seed", type=int, default=0)
 
 
@@ -43,6 +49,9 @@ if __name__ == "__main__":
         "relative error std": lambda y, pred: ((pred - y) / y).std(0),
     }
 
+    if not any(getattr(args, split_name) for split_name in ds_splits):
+        raise ValueError("No dataset split specified")
+
     for path in args.paths:
         extra_ds_kwargs = {
             "noise_type": args.noise_type,
@@ -58,10 +67,9 @@ if __name__ == "__main__":
             f"Model {path}, {param_num:.2e} parameters, epoch {checkpoint.scheduler.last_epoch}"
         )
         for split_name, ds_split in zip(
-            ("Train", "Validation", "Test"),
-            split_dataset(checkpoint.ds, args.splits),
+            ds_splits, split_dataset(checkpoint.ds, args.splits)
         ):
-            if split_name == "Test" and not args.test:
+            if not getattr(args, split_name):
                 continue
 
             loader = torch.utils.data.DataLoader(
@@ -71,7 +79,7 @@ if __name__ == "__main__":
             )
 
             results = test(loader, checkpoint.model, metrics)
-            print(f"\t{split_name} metrics ({len(ds_split)} samples):")
+            print(f"\t{split_name.capitalize()} metrics ({len(ds_split)} samples):")
             for metric_name, result in results.items():
                 if isinstance(result, torch.Tensor) and args.sum_aggregate:
                     result = result.sum()
