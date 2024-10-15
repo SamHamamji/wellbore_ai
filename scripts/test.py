@@ -17,6 +17,7 @@ parser.add_argument("--dataloader_workers", type=int, default=0)
 parser.add_argument("--batch_size", type=int, default=1)
 parser.add_argument("--test", action="store_true")
 parser.add_argument("--splits", type=float, nargs="+", default=(0.7, 0.2, 0.1))
+parser.add_argument("--data_dir", type=str, default=None)
 parser.add_argument(
     "--noise_type",
     type=str,
@@ -43,10 +44,14 @@ if __name__ == "__main__":
     }
 
     for path in args.paths:
-        checkpoint = Checkpoint.load_from_path(
-            path,
-            {"noise_type": args.noise_type, "noise_std": args.noise_std},
-        )
+        extra_ds_kwargs = {
+            "noise_type": args.noise_type,
+            "noise_std": args.noise_std,
+        }
+        if args.data_dir is not None:
+            extra_ds_kwargs["data_dir"] = args.data_dir
+
+        checkpoint = Checkpoint.load_from_path(path, extra_ds_kwargs)
         param_num = sum(p.numel() for p in checkpoint.model.parameters())
 
         print(
@@ -65,8 +70,9 @@ if __name__ == "__main__":
                 num_workers=args.dataloader_workers,
             )
 
+            results = test(loader, checkpoint.model, metrics)
             print(f"\t{split_name} metrics ({len(ds_split)} samples):")
-            for metric_name, result in test(loader, checkpoint.model, metrics).items():
+            for metric_name, result in results.items():
                 if isinstance(result, torch.Tensor) and args.sum_aggregate:
                     result = result.sum()
                 print(f"\t\t{metric_name}: {result}")
