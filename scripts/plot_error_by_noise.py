@@ -43,11 +43,18 @@ def get_figure_plotly(errors: torch.Tensor, noise_stds: torch.Tensor):
     return fig
 
 
-def show_plot_matplotlib(errors: torch.Tensor, noise_stds: torch.Tensor):
-    plt.subplots()
+def show_plot_matplotlib(
+    errors: torch.Tensor, noise_stds: torch.Tensor, noise_type: WaveDataset.noise_types
+):
+    plt.figure()
+
+    xlabel = f"{noise_type.replace("_", " ").capitalize()} noise std"
+    if noise_type == "additive_relative":
+        xlabel = "Additive noise std (%)"
+        noise_stds.mul_(100)
 
     plt.plot(noise_stds, errors)
-    plt.xlabel(f"{args.noise_type} noise std".capitalize())
+    plt.xlabel(xlabel)
     plt.ylabel("MARE")
     plt.show()
 
@@ -89,4 +96,4 @@ if __name__ == "__main__":
     if args.engine == "plotly":
         get_figure_plotly(errors, std_range).show()
     elif args.engine == "matplotlib":
-        show_plot_matplotlib(errors, std_range)
+        show_plot_matplotlib(errors, std_range, args.noise_type)
