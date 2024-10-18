@@ -36,7 +36,7 @@ class WaveDataset(torch.utils.data.Dataset):
     def __init__(
         self,
         data_dir: str,
-        target_length: int | None = None,
+        target_signal_length: int | None = None,
         label_type: label_types = "isotropic",
         bounds: tuple[range | None, ...] = (),
         noise_type: noise_types = "noiseless",
@@ -45,7 +45,7 @@ class WaveDataset(torch.utils.data.Dataset):
         dtype: torch.dtype | None = None,
     ):
         self.data_dir = data_dir
-        self.target_length = target_length
+        self.target_signal_length = target_signal_length
         self.label_type = label_type
         self.bounds = bounds
         self.noise_std = noise_std
@@ -64,7 +64,7 @@ class WaveDataset(torch.utils.data.Dataset):
     def get_kwargs(self):
         return {
             "data_dir": self.data_dir,
-            "target_length": self.target_length,
+            "target_signal_length": self.target_signal_length,
             "x_transform": self.x_transform,
             "label_type": self.label_type,
             "bounds": self.bounds,
@@ -159,8 +159,8 @@ class WaveDataset(torch.utils.data.Dataset):
             torch.from_numpy(data["wavearray_param"]).T[1:].to(dtype=self.dtype)
         )  # Drop time row
 
-        if self.target_length is not None:
-            wave = wave[..., : self.target_length]
+        if self.target_signal_length is not None:
+            wave = wave[..., : self.target_signal_length]
 
         if self.noise_type == "additive":
             wave.add_(torch.normal(0, self.noise_std, wave.shape))

@@ -20,6 +20,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--data_dir", type=str, required=True)
 parser.add_argument("--polar", action="store_true")
 parser.add_argument("--sample_index", type=int, default=0)
+parser.add_argument("--target_signal_length", type=int, required=False)
 parser.add_argument("--seed", type=int, default=0)
 parser.add_argument(
     "--noise_type",
@@ -125,7 +126,7 @@ if __name__ == "__main__":
     ds = WaveDataset(
         args.data_dir,
         dtype=torch.float32,
-        target_length=1541,
+        target_signal_length=args.target_signal_length,
         noise_type=args.noise_type,
         noise_std=args.noise_std,
     )

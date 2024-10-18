@@ -17,6 +17,7 @@ parser.add_argument("--model_type", type=str, choices=models.keys())
 parser.add_argument(
     "--label_type", type=str, choices=WaveDataset.label_types.__args__, required=True
 )
+parser.add_argument("--target_signal_length", type=int, required=False)
 parser.add_argument("--max_vs", type=int, required=False)
 parser.add_argument("--max_vp", type=int, required=False)
 parser.add_argument("--seed", type=int, default=0)
@@ -32,7 +33,7 @@ if __name__ == "__main__":
 
     ds = WaveDataset(
         data_dir=args.data_dir,
-        target_length=1541,
+        target_signal_length=args.target_signal_length,
         dtype=torch.float32,
         bounds=(
             range(args.max_vs) if args.max_vs else None,
