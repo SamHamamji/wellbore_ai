@@ -28,9 +28,7 @@ parser.add_argument(
 )
 
 
-def get_predictions_figure_plotly(
-    y: torch.Tensor, pred: torch.Tensor, target_name: str
-):
+def get_predictions_figure_plotly(y: torch.Tensor, pred: torch.Tensor, label_name: str):
     boundaries = torch.stack([y.min(), y.max()])
 
     fig = go.Figure(
@@ -39,18 +37,18 @@ def get_predictions_figure_plotly(
             go.Scatter(x=boundaries, y=boundaries, mode="lines", showlegend=False),
         ],
         layout={
-            "xaxis_title": f"True {target_name}",
-            "yaxis_title": f"Predicted {target_name}",
+            "xaxis_title": f"True {label_name}",
+            "yaxis_title": f"Predicted {label_name}",
         },
     )
     return fig
 
 
-def get_error_distribution_plotly(error: torch.Tensor, target_name: str):
+def get_error_distribution_plotly(error: torch.Tensor, label_name: str):
     return go.Figure(
         go.Histogram(x=error, histnorm="probability", showlegend=False),
         layout={
-            "xaxis_title": f"Relative {target_name} error",
+            "xaxis_title": f"Relative {label_name} error",
             "yaxis_title": "Occurrences",
         },
     )
@@ -111,26 +109,26 @@ if __name__ == "__main__":
     else:
         raise ValueError(f"Invalid layout: {args.layout}")
 
-    for target_index, target_name in enumerate(label_names):
-        target_y = y[..., target_index]
-        target_pred = pred[..., target_index]
+    for label_index, label_name in enumerate(label_names):
+        label_y = y[..., label_index]
+        label_pred = pred[..., label_index]
 
-        error = error_metric(target_y, target_pred)
+        error = error_metric(label_y, label_pred)
         assert isinstance(error, torch.Tensor)
 
         if args.engine == "plotly":
-            get_predictions_figure_plotly(target_y, target_pred, target_name).show()
-            get_error_distribution_plotly(error, target_name).show()
+            get_predictions_figure_plotly(label_y, label_pred, label_name).show()
+            get_error_distribution_plotly(error, label_name).show()
         elif args.engine == "matplotlib":
-            set_predictions_ax_matplotlib(target_y, target_pred, axes[0, target_index])
-            axes[0, target_index].set_xlabel(f"True {target_name}")
+            set_predictions_ax_matplotlib(label_y, label_pred, axes[0, label_index])
+            axes[0, label_index].set_xlabel(f"True {label_name}")
 
-            set_error_distribution_ax_matplotlib(error, axes[1, target_index])
-            axes[1, target_index].set_xlabel(f"Relative {target_name} error")
+            set_error_distribution_ax_matplotlib(error, axes[1, label_index])
+            axes[1, label_index].set_xlabel(f"Relative {label_name} error")
 
             if args.layout == "vertical":
-                axes[0, target_index].set_ylabel(f"Predicted {target_name}")
-                axes[1, target_index].set_ylabel("Frequency")
+                axes[0, label_index].set_ylabel(f"Predicted {label_name}")
+                axes[1, label_index].set_ylabel("Frequency")
 
     if args.layout == "horizontal":
         axes[0, 0].set_ylabel("Predicted values")

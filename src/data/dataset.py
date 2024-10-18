@@ -108,13 +108,7 @@ class WaveDataset(torch.utils.data.Dataset):
         Vp = data["vp_r"].item()
         c33 = density * Vp**2
         c44 = density * Vs**2
-        return (
-            c33,
-            abs(c33 - c44) - c44,
-            c33,
-            c44,
-            c44,
-        )
+        return (c33, abs(c33 - c44) - c44, c33, c44, c44)
 
     def get_velocities(
         self, data: dict, file_path: str
@@ -144,7 +138,7 @@ class WaveDataset(torch.utils.data.Dataset):
         Vp = data["vp_r"].item()
         return (Vs, Vp, Vs, Vp, Vp)
 
-    def get_targets(self, data: dict, file_path: str):
+    def get_labels(self, data: dict, file_path: str):
         if self.label_type == "isotropic":
             return torch.Tensor((data["vs_r"].item(), data["vp_r"].item()))
         if self.label_type == "stiffness":
@@ -180,9 +174,9 @@ class WaveDataset(torch.utils.data.Dataset):
             with torch.no_grad():
                 wave: torch.Tensor = self.x_transform(wave)
 
-        target = self.get_targets(data, file_path).to(dtype=self.dtype)
+        labels = self.get_labels(data, file_path).to(dtype=self.dtype)
 
-        return (wave, target)
+        return (wave, labels)
 
     def __len__(self):
         return len(self.files)
