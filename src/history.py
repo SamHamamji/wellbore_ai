@@ -2,7 +2,6 @@ import typing
 
 import plotly.graph_objects as go
 import matplotlib.pyplot as plt
-import mplcursors
 
 from src.plotter_engines import plotter_engines
 
@@ -100,7 +99,4 @@ class History:
         ax2.set_yscale("log")
         ax2.legend(frameon=False, loc="center right")
 
-        mplcursors.cursor(hover=True).connect(
-            "add", lambda sel: sel.annotation.set_text(sel.target)
-        )
         plt.show()
