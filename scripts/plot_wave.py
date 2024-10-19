@@ -38,6 +38,9 @@ parser.add_argument(
 
 
 def get_scaled_data(data: torch.Tensor, start: float, end: float):
+    if data.shape[0] == 1:
+        return data
+
     offset_per_receiver = data.max(dim=1).values.mean(0)
     offset = torch.arange(0, data.shape[0]) * offset_per_receiver
     data = data + offset.expand(data.T.shape).T
@@ -130,10 +133,8 @@ if __name__ == "__main__":
         noise_type=args.noise_type,
         noise_std=args.noise_std,
     )
-    transform = torch.nn.Sequential(
-        torch.nn.LazyBatchNorm1d(),
-        FftLayer(-1, -1, args.polar),
-    )
+    transform = FftLayer(-1, -1, args.polar)
+
     wave, _ = ds[args.sample_index]
 
     with torch.no_grad():
