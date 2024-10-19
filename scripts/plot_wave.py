@@ -6,7 +6,7 @@ import plotly.graph_objects as go
 import matplotlib.pyplot as plt
 
 from src.plotter_engines import plotter_engines
-from src.data.dataset import WaveDataset
+from src.data.dataset import WellboreDataset
 from src.layers import FftLayer
 
 
@@ -25,8 +25,8 @@ parser.add_argument("--seed", type=int, default=0)
 parser.add_argument(
     "--noise_type",
     type=str,
-    default=WaveDataset.noise_types.__args__[0],
-    choices=WaveDataset.noise_types.__args__,
+    default=WellboreDataset.noise_types.__args__[0],
+    choices=WellboreDataset.noise_types.__args__,
 )
 parser.add_argument("--noise_std", type=float, default=None)
 parser.add_argument(
@@ -126,7 +126,7 @@ if __name__ == "__main__":
 
     torch.manual_seed(args.seed)
 
-    ds = WaveDataset(
+    ds = WellboreDataset(
         args.data_dir,
         dtype=torch.float32,
         target_signal_length=args.target_signal_length,

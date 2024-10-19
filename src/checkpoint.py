@@ -2,7 +2,7 @@ import json
 
 import torch
 
-from src.data.dataset import WaveDataset
+from src.data.dataset import WellboreDataset
 from src.pad_state_dicts import pad_model_state_dict, pad_optimizer_state_dict
 from src.history import History
 
@@ -10,7 +10,7 @@ from src.history import History
 class Checkpoint:
     def __init__(
         self,
-        ds: WaveDataset,
+        ds: WellboreDataset,
         model: torch.nn.Module,
         optimizer: torch.optim.Optimizer,
         scheduler: torch.optim.lr_scheduler.ReduceLROnPlateau,
@@ -55,7 +55,7 @@ class Checkpoint:
         scheduler_state_dict = file_content["scheduler_state_dict"]
         history_state_dict = file_content.get("history_state_dict", {})
 
-        ds = WaveDataset(**ds_kwargs)
+        ds = WellboreDataset(**ds_kwargs)
         model: torch.nn.Module = model_type(*map(lambda t: t.shape, ds[0]))
         optimizer: torch.optim.Optimizer = optimizer_type(model.parameters())
         scheduler: torch.optim.lr_scheduler.ReduceLROnPlateau = scheduler_type(

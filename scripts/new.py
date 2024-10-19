@@ -5,7 +5,7 @@ import numpy as np
 import torch.utils.data
 
 from src.checkpoint import Checkpoint
-from src.data.dataset import WaveDataset
+from src.data.dataset import WellboreDataset
 from src.history import History
 from src.models import models
 
@@ -15,7 +15,10 @@ parser.add_argument("--data_dir", type=str, required=True)
 parser.add_argument("--path", type=str, default=None)
 parser.add_argument("--model_type", type=str, choices=models.keys())
 parser.add_argument(
-    "--label_type", type=str, choices=WaveDataset.label_types.__args__, required=True
+    "--label_type",
+    type=str,
+    choices=WellboreDataset.label_types.__args__,
+    required=True,
 )
 parser.add_argument("--target_signal_length", type=int, required=False)
 parser.add_argument("--max_vs", type=int, required=False)
@@ -31,7 +34,7 @@ if __name__ == "__main__":
 
     model_type = models[args.model_type]
 
-    ds = WaveDataset(
+    ds = WellboreDataset(
         data_dir=args.data_dir,
         target_signal_length=args.target_signal_length,
         dtype=torch.float32,

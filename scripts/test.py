@@ -5,7 +5,7 @@ import torch.utils.data
 
 from src.checkpoint import Checkpoint
 from src.data.split import split_dataset
-from src.data.dataset import WaveDataset
+from src.data.dataset import WellboreDataset
 from src.train_test import test
 from src.metric import Metric
 
@@ -28,8 +28,8 @@ parser.add_argument("--data_dir", type=str, default=None)
 parser.add_argument(
     "--noise_type",
     type=str,
-    default=WaveDataset.noise_types.__args__[0],
-    choices=WaveDataset.noise_types.__args__,
+    default=WellboreDataset.noise_types.__args__[0],
+    choices=WellboreDataset.noise_types.__args__,
 )
 parser.add_argument("--noise_std", type=float, default=None)
 parser.add_argument("--seed", type=int, default=0)

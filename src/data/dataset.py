@@ -9,12 +9,11 @@ import torch.utils.data
 
 num = r"[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?"
 target_variables = f"vs({num})vp({num})(?:eps({num})gam({num})del({num}))?"
-wave_file_regex = f".*(?:ISO|VTI)_{target_variables}_MP_dipole.mat$"
-wave_file_regex = re.compile(wave_file_regex)
+matlab_file_regex = re.compile(f".*(?:ISO|VTI)_{target_variables}_MP_dipole.mat$")
 
 
 def filter_file(file: str, bounds: tuple[range | None, ...]) -> bool:
-    match = re.match(wave_file_regex, file)
+    match = re.match(matlab_file_regex, file)
     if match is None:
         return False
 
@@ -27,7 +26,7 @@ def filter_file(file: str, bounds: tuple[range | None, ...]) -> bool:
     )
 
 
-class WaveDataset(torch.utils.data.Dataset):
+class WellboreDataset(torch.utils.data.Dataset):
     label_types = typing.Literal["isotropic", "stiffness", "thomsen", "velocities"]
     noise_types = typing.Literal[
         "noiseless", "additive", "additive_relative", "multiplicative"
@@ -87,7 +86,7 @@ class WaveDataset(torch.utils.data.Dataset):
         raise NotImplementedError()
 
     def get_thomsens_params(self, file_path: str):
-        match = re.match(wave_file_regex, file_path)
+        match = re.match(matlab_file_regex, file_path)
         assert match is not None
         return match.groups()[2:]
 
@@ -155,28 +154,28 @@ class WaveDataset(torch.utils.data.Dataset):
         file_path = self.files[index]
         data: dict = scipy.io.loadmat(file_path)
 
-        wave = (
+        signal = (
             torch.from_numpy(data["wavearray_param"]).T[1:].to(dtype=self.dtype)
         )  # Drop time row
 
         if self.target_signal_length is not None:
-            wave = wave[..., : self.target_signal_length]
+            signal = signal[..., : self.target_signal_length]
 
         if self.noise_type == "additive":
-            wave.add_(torch.normal(0, self.noise_std, wave.shape))
+            signal.add_(torch.normal(0, self.noise_std, signal.shape))
         if self.noise_type == "additive_relative":
-            peak = wave.abs().max().item()
-            wave.add_(torch.normal(0, self.noise_std * peak, wave.shape))
+            peak = signal.abs().max().item()
+            signal.add_(torch.normal(0, self.noise_std * peak, signal.shape))
         if self.noise_type == "multiplicative":
-            wave.mul_(torch.normal(1, self.noise_std, wave.shape))
+            signal.mul_(torch.normal(1, self.noise_std, signal.shape))
 
         if self.x_transform is not None:
             with torch.no_grad():
-                wave: torch.Tensor = self.x_transform(wave)
+                signal: torch.Tensor = self.x_transform(signal)
 
         labels = self.get_labels(data, file_path).to(dtype=self.dtype)
 
-        return (wave, labels)
+        return (signal, labels)
 
     def __len__(self):
         return len(self.files)

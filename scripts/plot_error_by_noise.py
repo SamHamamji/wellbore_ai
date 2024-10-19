@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 
 from src.checkpoint import Checkpoint
 from src.data.split import split_dataset
-from src.data.dataset import WaveDataset
+from src.data.dataset import WellboreDataset
 from src.metric import Metric
 from src.plotter_engines import plotter_engines
 
@@ -21,8 +21,8 @@ parser.add_argument("--noise_std_step", type=float, required=True)
 parser.add_argument(
     "--noise_type",
     type=str,
-    default=WaveDataset.noise_types.__args__[0],
-    choices=WaveDataset.noise_types.__args__,
+    default=WellboreDataset.noise_types.__args__[0],
+    choices=WellboreDataset.noise_types.__args__,
 )
 parser.add_argument(
     "--engine",
@@ -44,7 +44,9 @@ def get_figure_plotly(errors: torch.Tensor, noise_stds: torch.Tensor):
 
 
 def show_plot_matplotlib(
-    errors: torch.Tensor, noise_stds: torch.Tensor, noise_type: WaveDataset.noise_types
+    errors: torch.Tensor,
+    noise_stds: torch.Tensor,
+    noise_type: WellboreDataset.noise_types,
 ):
     plt.figure()
 
