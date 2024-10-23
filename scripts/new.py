@@ -15,6 +15,12 @@ parser.add_argument("--data_dir", type=str, required=True)
 parser.add_argument("--path", type=str, default=None)
 parser.add_argument("--model_type", type=str, choices=models.keys())
 parser.add_argument(
+    "--signal_type",
+    type=str,
+    choices=WellboreDataset.signal_types.__args__,
+    required=True,
+)
+parser.add_argument(
     "--label_type",
     type=str,
     choices=WellboreDataset.label_types.__args__,
@@ -38,11 +44,12 @@ if __name__ == "__main__":
         data_dir=args.data_dir,
         target_signal_length=args.target_signal_length,
         dtype=torch.float32,
+        signal_type=args.signal_type,
+        label_type=args.label_type,
         label_bounds=(
             range(args.max_vs) if args.max_vs else None,
             range(args.max_vp) if args.max_vp else None,
         ),
-        label_type=args.label_type,
         x_transform=(
             model_type.dataset_x_transform  # type: ignore
             if hasattr(model_type, "dataset_x_transform")
