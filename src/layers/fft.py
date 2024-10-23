@@ -8,9 +8,9 @@ class FftLayer(torch.nn.Module):
         self.complex_dim = complex_dim
         self.polar_decomposition = polar_decomposition
 
-    def forward(self, wave: torch.Tensor):
+    def forward(self, signal: torch.Tensor):
         # pylint: disable=not-callable
-        ft: torch.Tensor = torch.fft.rfft(wave, dim=self.time_dim)
+        ft: torch.Tensor = torch.fft.rfft(signal, dim=self.time_dim)
         if self.polar_decomposition:
             ft = torch.stack((ft.abs(), ft.angle()), dim=-1)
         else:

@@ -27,15 +27,21 @@ def filter_file(file: str, bounds: tuple[range | None, ...]) -> bool:
 
 
 class WellboreDataset(torch.utils.data.Dataset):
+    signal_types = typing.Literal["waveform", "dispersion_curve"]
     label_types = typing.Literal["isotropic", "stiffness", "thomsen", "velocities"]
     noise_types = typing.Literal[
         "noiseless", "additive", "additive_relative", "multiplicative"
     ]
+    signal_type_dict: dict[signal_types, str] = {
+        "waveform": "wavearray_param",
+        "dispersion_curve": "slowness_param",
+    }
 
     def __init__(
         self,
         data_dir: str,
         target_signal_length: int | None = None,
+        signal_type: signal_types = "waveform",
         label_type: label_types = "isotropic",
         bounds: tuple[range | None, ...] = (),
         noise_type: noise_types = "noiseless",
@@ -45,13 +51,15 @@ class WellboreDataset(torch.utils.data.Dataset):
     ):
         self.data_dir = data_dir
         self.target_signal_length = target_signal_length
+        self.signal_type = signal_type
         self.label_type = label_type
         self.bounds = bounds
-        self.noise_std = noise_std
         self.noise_type = noise_type
+        self.noise_std = noise_std
         self.x_transform = x_transform
         self.dtype = dtype
 
+        self.signal_type_str = self.signal_type_dict[self.signal_type]
         self.files = list(
             filter(
                 lambda file: filter_file(file.split("/")[-1], bounds),
@@ -64,9 +72,12 @@ class WellboreDataset(torch.utils.data.Dataset):
         return {
             "data_dir": self.data_dir,
             "target_signal_length": self.target_signal_length,
-            "x_transform": self.x_transform,
+            "signal_type": self.signal_type,
             "label_type": self.label_type,
             "bounds": self.bounds,
+            "noise_type": self.noise_type,
+            "noise_std": self.noise_std,
+            "x_transform": self.x_transform,
             "dtype": self.dtype,
         }
 
@@ -150,13 +161,19 @@ class WellboreDataset(torch.utils.data.Dataset):
             return torch.Tensor(self.get_velocities(data, file_path))
         raise NotImplementedError()
 
+    def get_frequency_scale(self, index: int) -> torch.Tensor:
+        file_path = self.files[index]
+        data: dict = scipy.io.loadmat(file_path)
+        return torch.from_numpy(data["frequency_param"].T)
+
     def __getitem__(self, index: int):
         file_path = self.files[index]
         data: dict = scipy.io.loadmat(file_path)
 
-        signal = (
-            torch.from_numpy(data["wavearray_param"]).T[1:].to(dtype=self.dtype)
-        )  # Drop time row
+        signal = torch.from_numpy(data[self.signal_type_str]).T.to(dtype=self.dtype)
+
+        if self.signal_type_str == "wavearray_param":
+            signal = signal[1:]  # Drop time row
 
         if self.target_signal_length is not None:
             signal = signal[..., : self.target_signal_length]
