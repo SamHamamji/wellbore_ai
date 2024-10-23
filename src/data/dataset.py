@@ -12,7 +12,7 @@ target_variables = f"vs({num})vp({num})(?:eps({num})gam({num})del({num}))?"
 matlab_file_regex = re.compile(f".*(?:ISO|VTI)_{target_variables}_MP_dipole.mat$")
 
 
-def filter_file(file: str, bounds: tuple[range | None, ...]) -> bool:
+def filter_file(file: str, label_bounds: tuple[range | None, ...]) -> bool:
     match = re.match(matlab_file_regex, file)
     if match is None:
         return False
@@ -21,7 +21,7 @@ def filter_file(file: str, bounds: tuple[range | None, ...]) -> bool:
 
     return all(
         bound.start <= float(groups[i]) < bound.stop
-        for i, bound in enumerate(bounds)
+        for i, bound in enumerate(label_bounds)
         if bound is not None
     )
 
@@ -43,7 +43,7 @@ class WellboreDataset(torch.utils.data.Dataset):
         target_signal_length: int | None = None,
         signal_type: signal_types = "waveform",
         label_type: label_types = "isotropic",
-        bounds: tuple[range | None, ...] = (),
+        label_bounds: tuple[range | None, ...] = (),
         noise_type: noise_types = "noiseless",
         noise_std: float = 0.0,
         x_transform: torch.nn.Module | None = None,
@@ -53,7 +53,7 @@ class WellboreDataset(torch.utils.data.Dataset):
         self.target_signal_length = target_signal_length
         self.signal_type = signal_type
         self.label_type = label_type
-        self.bounds = bounds
+        self.label_bounds = label_bounds
         self.noise_type = noise_type
         self.noise_std = noise_std
         self.x_transform = x_transform
@@ -62,7 +62,7 @@ class WellboreDataset(torch.utils.data.Dataset):
         self.signal_type_str = self.signal_type_dict[self.signal_type]
         self.files = list(
             filter(
-                lambda file: filter_file(file.split("/")[-1], bounds),
+                lambda file: filter_file(file.split("/")[-1], label_bounds),
                 glob.iglob(os.path.join(data_dir, "**"), recursive=True),
             )
         )
@@ -74,7 +74,7 @@ class WellboreDataset(torch.utils.data.Dataset):
             "target_signal_length": self.target_signal_length,
             "signal_type": self.signal_type,
             "label_type": self.label_type,
-            "bounds": self.bounds,
+            "label_bounds": self.label_bounds,
             "noise_type": self.noise_type,
             "noise_std": self.noise_std,
             "x_transform": self.x_transform,

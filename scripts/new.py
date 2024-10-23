@@ -38,7 +38,7 @@ if __name__ == "__main__":
         data_dir=args.data_dir,
         target_signal_length=args.target_signal_length,
         dtype=torch.float32,
-        bounds=(
+        label_bounds=(
             range(args.max_vs) if args.max_vs else None,
             range(args.max_vp) if args.max_vp else None,
         ),
