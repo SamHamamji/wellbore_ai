@@ -1,7 +1,6 @@
 import argparse
 
 import torch.utils.data
-import dash
 import plotly.graph_objects as go
 import matplotlib.pyplot as plt
 
@@ -22,6 +21,12 @@ parser.add_argument("--polar", action="store_true")
 parser.add_argument("--sample_index", type=int, default=0)
 parser.add_argument("--target_signal_length", type=int, required=False)
 parser.add_argument("--seed", type=int, default=0)
+parser.add_argument(
+    "--signal_type",
+    type=str,
+    default=WellboreDataset.signal_types.__args__[0],
+    choices=WellboreDataset.signal_types.__args__,
+)
 parser.add_argument(
     "--noise_type",
     type=str,
@@ -48,10 +53,62 @@ def get_scaled_data(data: torch.Tensor, start: float, end: float):
     return data * (end - start) / offset_per_receiver / (data.shape[0] - 1) + start
 
 
-def get_offset(data: torch.Tensor, index: int):
-    if index == 0:
-        return torch.zeros(1, *data.shape[2:])
-    return data.max(dim=1).values.mean(0) * index
+def plot_dispersion_curve(
+    dispersion_curve: torch.Tensor, frequency_scale: torch.Tensor, engine: str
+):
+    dispersion_curve = get_scaled_data(
+        dispersion_curve, START_RECEIVER, END_RECEIVER
+    ).squeeze()
+    frequency_scale = frequency_scale.squeeze()
+
+    if engine == "plotly":
+        plot_dispersion_curve_plotly(dispersion_curve, frequency_scale)
+    else:
+        plot_dispersion_curve_matplotlib(dispersion_curve, frequency_scale)
+
+
+def plot_dispersion_curve_plotly(dispersion_curve: torch.Tensor, scale: torch.Tensor):
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(x=scale, y=dispersion_curve))
+    fig.update_layout(
+        title="Dispersion curve",
+        xaxis_title="Frequency (Hz)",
+        yaxis_title="Slowness (μs/m)",
+        yaxis_range=[0, 400],
+    )
+    fig.show()
+
+
+def plot_dispersion_curve_matplotlib(
+    dispersion_curve: torch.Tensor, scale: torch.Tensor
+):
+    plt.figure()
+    plt.plot(scale, dispersion_curve)
+    plt.title("Dispersion curve")
+    plt.xlabel("Frequency (Hz)")
+    plt.ylabel("Slowness (μs/m)")
+    plt.ylim(0, 400)
+
+    plt.show()
+
+
+def plot_wave(wave: torch.Tensor, polar: bool, engine: str):
+    transform = FftLayer(-1, -1, polar)
+    with torch.no_grad():
+        spect = transform(wave)
+
+    wave = get_scaled_data(wave, START_RECEIVER, END_RECEIVER)
+    spect[..., 0] = get_scaled_data(spect[..., 0], START_RECEIVER, END_RECEIVER)
+    spect[..., 1] = get_scaled_data(spect[..., 1], START_RECEIVER, END_RECEIVER)
+
+    # pylint: disable=not-callable
+    frequency_scale = torch.fft.rfftfreq(wave.shape[-1], d=SAMPLING_INTERVAL)
+    time_scale = torch.arange(wave.shape[-1]) * SAMPLING_INTERVAL
+
+    if engine == "plotly":
+        plot_wave_plotly(wave, time_scale, spect, frequency_scale, polar)
+    else:
+        plot_wave_matplotlib(wave, time_scale, spect, frequency_scale, polar)
 
 
 def plot_wave_plotly(
@@ -61,7 +118,6 @@ def plot_wave_plotly(
     frequency_scale: torch.Tensor,
     polar: bool,
 ):
-    figures = []
     for data, scale, title, xlabel in zip(
         [wave, spect[..., 0], spect[..., 1]],
         [time_scale, frequency_scale, frequency_scale],
@@ -72,26 +128,19 @@ def plot_wave_plotly(
         ],
         ["Time", "Frequency (Hz)", "Frequency (Hz)"],
     ):
-        figures.append(
-            go.Figure(
-                [
-                    go.Scatter(x=scale, y=signal, name=f"Receiver {i}")
-                    for i, signal in enumerate(data)
-                ],
-                layout={
-                    "title": title,
-                    "xaxis_title": xlabel,
-                    "yaxis_title": "Distance from source (m)",
-                },
-            )
+        figure = go.Figure(
+            [
+                go.Scatter(x=scale, y=signal, name=f"Receiver {i}")
+                for i, signal in enumerate(data)
+            ],
+            layout={
+                "title": title,
+                "xaxis_title": xlabel,
+                "yaxis_title": "Distance from source (m)",
+            },
         )
 
-    app = dash.Dash()
-    app.layout = [
-        dash.html.H1("Wave plots"),
-        *[dash.dcc.Graph(figure=figure) for figure in figures],
-    ]
-    app.run(debug=True)
+        figure.show()
 
 
 def plot_wave_matplotlib(
@@ -129,26 +178,15 @@ if __name__ == "__main__":
     ds = WellboreDataset(
         args.data_dir,
         dtype=torch.float32,
+        signal_type=args.signal_type,
         target_signal_length=args.target_signal_length,
         noise_type=args.noise_type,
         noise_std=args.noise_std,
     )
-    transform = FftLayer(-1, -1, args.polar)
-
     wave, _ = ds[args.sample_index]
 
-    with torch.no_grad():
-        spect = transform(wave)
-
-    wave = get_scaled_data(wave, START_RECEIVER, END_RECEIVER)
-    spect[..., 0] = get_scaled_data(spect[..., 0], START_RECEIVER, END_RECEIVER)
-    spect[..., 1] = get_scaled_data(spect[..., 1], START_RECEIVER, END_RECEIVER)
-
-    # pylint: disable=not-callable
-    frequency_scale = torch.fft.rfftfreq(wave.shape[-1], d=SAMPLING_INTERVAL)
-    time_scale = torch.arange(wave.shape[-1]) * SAMPLING_INTERVAL
-
-    if args.engine == "plotly":
-        plot_wave_plotly(wave, time_scale, spect, frequency_scale, args.polar)
+    if args.signal_type == "waveform":
+        plot_wave(wave, args.polar, args.engine)
     else:
-        plot_wave_matplotlib(wave, time_scale, spect, frequency_scale, args.polar)
+        frequency_scale = ds.get_frequency_scale(args.sample_index)
+        plot_dispersion_curve(wave, frequency_scale, args.engine)
