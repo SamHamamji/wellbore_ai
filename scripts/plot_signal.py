@@ -86,7 +86,7 @@ def plot_dispersion_curve_matplotlib(
     plt.plot(scale, dispersion_curve)
     plt.title("Dispersion curve")
     plt.xlabel("Frequency (Hz)")
-    plt.ylabel("Slowness (μs/m)")
+    plt.ylabel("Slowness (μs/ft)")
     plt.ylim(0, 400)
 
     plt.show()
