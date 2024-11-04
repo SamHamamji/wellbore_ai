@@ -7,7 +7,7 @@ from src.checkpoint import Checkpoint
 from src.data.split import split_dataset
 from src.data.dataset import WellboreDataset
 from src.train_test import test
-from src.metric import Metric
+import src.metric as metric
 
 ds_splits = ("train", "validation", "test")
 
@@ -41,12 +41,12 @@ if __name__ == "__main__":
     np.random.seed(args.seed)
     torch.manual_seed(args.seed)
 
-    metrics: dict[str, Metric] = {
-        "rmse": lambda y, pred: (pred - y).square().mean(0).sqrt(),
-        "mae": lambda y, pred: (pred - y).abs().mean(0),
-        "error std": lambda y, pred: (pred - y).std(0),
-        "mare": lambda y, pred: ((pred - y).abs() / y).mean(0),
-        "relative error std": lambda y, pred: ((pred - y) / y).std(0),
+    metrics: dict[str, metric.Metric] = {
+        "rmse": lambda y, pred: metric.squared_error(y, pred).mean(0).sqrt_(),
+        "mae": lambda y, pred: metric.absolute_error(y, pred).abs_().mean(0),
+        "error std": lambda y, pred: metric.absolute_error(y, pred).std(0),
+        "mare": lambda y, pred: metric.relative_error(y, pred).abs_().mean(0),
+        "relative error std": lambda y, pred: metric.relative_error(y, pred).std(0),
     }
 
     if not any(getattr(args, split_name) for split_name in ds_splits):

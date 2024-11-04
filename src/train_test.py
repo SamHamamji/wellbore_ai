@@ -82,7 +82,7 @@ def train(
         val_metrics = test(
             val_loader,
             model,
-            {"loss": lambda y, pred: loss_fn(pred, y).mean(0).sum(0).item()},
+            {"loss": lambda y, pred: loss_fn(pred, y).mean(0).sum(0)},
         )
         testing_time = time.time() - initial_time - training_time
 
@@ -119,6 +119,6 @@ def test(
             total_y = torch.concat((total_y, y_batch))
 
     return {
-        metric_name: metric_fn(total_y, total_preds)
+        metric_name: metric_fn(total_y, total_preds).item()
         for metric_name, metric_fn in metrics.items()
     }

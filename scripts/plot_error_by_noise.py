@@ -7,8 +7,8 @@ import matplotlib.pyplot as plt
 from src.checkpoint import Checkpoint
 from src.data.split import split_dataset
 from src.data.dataset import WellboreDataset
-from src.metric import Metric
 from src.plotter_engines import plotter_engines
+import src.metric as metric
 
 
 parser = argparse.ArgumentParser()
@@ -73,7 +73,9 @@ if __name__ == "__main__":
         step=args.noise_std_step,
     )
 
-    error_metric: Metric = lambda y, pred: ((pred - y) / y).abs().mean(0).sum()
+    error_metric: metric.Metric = (
+        lambda y, pred: metric.relative_error(y, pred).abs_().mean(0).sum(0)
+    )
     errors = []
     for std in std_range:
         checkpoint.ds.noise_std = std.item()

@@ -7,8 +7,8 @@ import matplotlib.pyplot as plt
 
 from src.checkpoint import Checkpoint
 from src.data.split import split_dataset
-from src.metric import Metric
 from src.plotter_engines import plotter_engines
+import src.metric as metric
 
 
 parser = argparse.ArgumentParser()
@@ -90,7 +90,7 @@ if __name__ == "__main__":
         batch_size=int(len(test_subset) * args.proportion),
     )
 
-    error_metric: Metric = lambda y, pred: ((pred - y) / y)
+    error_metric = metric.relative_error
 
     X, y = next(iter(loader))
     X: torch.Tensor

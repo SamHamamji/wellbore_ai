@@ -5,8 +5,8 @@ import torch.utils.data
 
 from src.checkpoint import Checkpoint
 from src.data.split import split_dataset
-from src.metric import Metric
 from src.train_test import train, test
+import src.metric as metric
 
 
 parser = argparse.ArgumentParser()
@@ -72,21 +72,15 @@ if __name__ == "__main__":
     print(f"Training parameters: {training_params}")
 
     if args.test_first:
-        metrics: dict[str, Metric] = {
-            "rmse": lambda y, pred: (y - pred).square().mean(0).sqrt()
+        metrics: dict[str, metric.Metric] = {
+            "rmse": lambda y, pred: metric.squared_error(y, pred).mean(0).sqrt_()
         }
         print(f"Training metrics: {test(train_loader, checkpoint.model, metrics)}")
         print(f"Validation metrics: {test(val_loader, checkpoint.model, metrics)}")
     print()
 
     try:
-        train(
-            checkpoint,
-            train_loader,
-            val_loader,
-            lambda y, pred: (y - pred).square(),
-            args.epochs,
-        )
+        train(checkpoint, train_loader, val_loader, metric.squared_error, args.epochs)
         save_model = True
     except KeyboardInterrupt:
         save_model_prompt = input("\nInterrupted training, save model? [y/N] ")
