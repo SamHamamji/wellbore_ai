@@ -28,7 +28,9 @@ def filter_file(file: str, label_bounds: tuple[range | None, ...]) -> bool:
 
 class WellboreDataset(torch.utils.data.Dataset):
     signal_types = typing.Literal["waveform", "dispersion_curve"]
-    label_types = typing.Literal["isotropic", "stiffness", "thomsen", "velocities"]
+    label_types = typing.Literal[
+        "isotropic", "stiffness", "thomsen", "velocities", "anisotropy"
+    ]
     noise_types = typing.Literal[
         "noiseless", "additive", "additive_relative", "multiplicative"
     ]
@@ -94,6 +96,8 @@ class WellboreDataset(torch.utils.data.Dataset):
                 "Vp$_{90}$ (m/s)",
                 "Vp$_{45}$ (m/s)",
             )
+        if self.label_type == "anisotropy":
+            return ("Anisotropy",)
         raise NotImplementedError()
 
     def get_thomsens_params(self, file_path: str):
@@ -149,6 +153,8 @@ class WellboreDataset(torch.utils.data.Dataset):
         return (Vs, Vp, Vs, Vp, Vp)
 
     def get_labels(self, data: dict, file_path: str):
+        if self.label_type == "anisotropy":
+            return torch.tensor(("c11_r" not in data,))
         if self.label_type == "isotropic":
             return torch.Tensor((data["vs_r"].item(), data["vp_r"].item()))
         if self.label_type == "stiffness":
