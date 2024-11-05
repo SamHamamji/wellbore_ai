@@ -55,9 +55,10 @@ def show_plot_matplotlib(
         xlabel = "Additive noise std (%)"
         noise_stds.mul_(100)
 
-    plt.plot(noise_stds, errors)
+    plt.plot(noise_stds, errors, marker="o")
     plt.xlabel(xlabel)
     plt.ylabel("MARE")
+    plt.tight_layout()
     plt.show()
 
 

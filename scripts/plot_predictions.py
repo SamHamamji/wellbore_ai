@@ -134,5 +134,5 @@ if __name__ == "__main__":
         axes[0, 0].set_ylabel("Predicted values")
         axes[1, 0].set_ylabel("Frequency")
 
-    fig.set_layout_engine("tight")
+    fig.tight_layout()
     plt.show()

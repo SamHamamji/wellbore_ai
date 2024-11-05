@@ -89,6 +89,7 @@ def plot_dispersion_curve_matplotlib(
     plt.ylabel("Slowness (μs/ft)")
     plt.ylim(0, 400)
 
+    plt.tight_layout()
     plt.show()
 
 
@@ -163,6 +164,7 @@ def plot_wave_matplotlib(
         plt.figure()
         for i, signal in enumerate(data):
             plt.plot(scale, signal, label=f"Receiver {i}")
+        plt.tight_layout()
         plt.title(title)
         plt.xlabel(xlabel)
         plt.ylabel("Distance from source (m)")

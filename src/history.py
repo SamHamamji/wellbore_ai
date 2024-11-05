@@ -77,7 +77,6 @@ class History:
                 self._state_dict[metric],
                 "-",
                 label=metric.replace("_", " ").capitalize(),
-                linewidth=5,
             )
 
         ax2 = ax1.twinx()
@@ -86,7 +85,6 @@ class History:
             self._state_dict["learning_rate"],
             "g-",
             label="Learning rate",
-            linewidth=5,
         )
         ax2.set_ylim(top=1e-1, bottom=7e-5)
 
@@ -99,4 +97,5 @@ class History:
         ax2.set_yscale("log")
         ax2.legend(frameon=False, loc="center right")
 
+        plt.tight_layout()
         plt.show()
