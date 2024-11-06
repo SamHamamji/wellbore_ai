@@ -4,7 +4,7 @@ import sklearn.model_selection
 
 
 def get_index_splits(proportions: tuple[float, ...], labels: torch.Tensor):
-    assert sum(proportions) == 1, f"{sum(proportions)=}"
+    assert round(sum(proportions), 5) == 1, f"{sum(proportions)=}"
 
     values = torch.arange(len(labels))
     remaining_ratio = 1.0
