@@ -6,7 +6,7 @@ import torch.utils.data
 from src.checkpoint import Checkpoint
 from src.data.split import split_dataset
 from src.train_test import train, test
-import src.metric as metric
+from src.metric import Metric, error_metrics
 
 
 parser = argparse.ArgumentParser()
@@ -15,6 +15,9 @@ parser.add_argument("--seed", type=int, default=0)
 parser.add_argument("--test_first", action="store_true")
 
 training_args = parser.add_argument_group("Training")
+training_args.add_argument(
+    "--loss", type=str, choices=error_metrics.keys(), default="squared_error"
+)
 training_args.add_argument("--epochs", type=int, required=True)
 training_args.add_argument("--lr", type=float)
 training_args.add_argument("--lr_threshold", type=float)
@@ -71,16 +74,17 @@ if __name__ == "__main__":
     }
     print(f"Training parameters: {training_params}")
 
+    loss_fn = error_metrics[args.loss]
     if args.test_first:
-        metrics: dict[str, metric.Metric] = {
-            "rmse": lambda y, pred: metric.squared_error(y, pred).mean(0).sqrt_()
+        metrics: dict[str, Metric] = {
+            "rmse": lambda y, pred: loss_fn(y, pred).mean(0).sqrt_()
         }
         print(f"Training metrics: {test(train_loader, checkpoint.model, metrics)}")
         print(f"Validation metrics: {test(val_loader, checkpoint.model, metrics)}")
     print()
 
     try:
-        train(checkpoint, train_loader, val_loader, metric.squared_error, args.epochs)
+        train(checkpoint, train_loader, val_loader, loss_fn, args.epochs)
         save_model = True
     except KeyboardInterrupt:
         save_model_prompt = input("\nInterrupted training, save model? [y/N] ")
