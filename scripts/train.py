@@ -66,6 +66,7 @@ if __name__ == "__main__":
     update_training_params(args, checkpoint.optimizer, checkpoint.scheduler)
     scheduler_state_dict = checkpoint.scheduler.state_dict()
     training_params = {
+        "loss_fn": args.loss,
         "lr": checkpoint.scheduler.get_last_lr()[0],
         "threshold": scheduler_state_dict["threshold"],
         "factor": scheduler_state_dict["factor"],
