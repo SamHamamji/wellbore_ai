@@ -54,27 +54,6 @@ def get_error_distribution_plotly(error: torch.Tensor, label_name: str):
     )
 
 
-def set_predictions_ax_matplotlib(y: torch.Tensor, pred: torch.Tensor, ax: plt.Axes):
-    boundaries = torch.stack([y.min(), y.max()])
-
-    ax.scatter(y, pred)
-    ax.plot(boundaries, boundaries, "r--", label="y=x")
-
-
-def set_error_distribution_ax_matplotlib(error: torch.Tensor, ax: plt.Axes):
-    ax.hist(error, bins=20, density=True)
-    ax.set_ylim(top=ax.get_ylim()[1] * 1.3)
-    ax.legend(
-        [
-            f"Mean absolute error: {error.abs().mean():.3f}\nStandard dev: {error.std():.3f}"
-        ],
-        handlelength=0,
-        handletextpad=0,
-        prop={"size": 16},
-        frameon=False,
-    )
-
-
 if __name__ == "__main__":
     args = parser.parse_args()
 
@@ -102,12 +81,16 @@ if __name__ == "__main__":
 
     label_names = checkpoint.ds.get_label_names()
     if args.layout == "horizontal":
-        fig, axes = plt.subplots(2, len(label_names), figsize=(4 * len(label_names), 8))
+        fig, axes = plt.subplots(
+            2, (len(label_names) + 1) // 2, figsize=(4 * len(label_names), 8)
+        )
     elif args.layout == "vertical":
-        fig, axes = plt.subplots(len(label_names), 2, figsize=(8, 4 * len(label_names)))
-        axes = axes.T
+        fig, axes = plt.subplots(
+            (len(label_names) + 1) // 2, 2, figsize=(8, 4 * len(label_names))
+        )
     else:
         raise ValueError(f"Invalid layout: {args.layout}")
+    axes = axes.reshape(-1)
 
     for label_index, label_name in enumerate(label_names):
         label_y = y[..., label_index]
@@ -120,19 +103,23 @@ if __name__ == "__main__":
             get_predictions_figure_plotly(label_y, label_pred, label_name).show()
             get_error_distribution_plotly(error, label_name).show()
         elif args.engine == "matplotlib":
-            set_predictions_ax_matplotlib(label_y, label_pred, axes[0, label_index])
-            axes[0, label_index].set_xlabel(f"True {label_name}")
+            ax: plt.Axes = axes[label_index]
 
-            set_error_distribution_ax_matplotlib(error, axes[1, label_index])
-            axes[1, label_index].set_xlabel(f"Relative {label_name} error")
+            boundaries = torch.stack([label_y.min(), label_y.max()])
 
-            if args.layout == "vertical":
-                axes[0, label_index].set_ylabel(f"Predicted {label_name}")
-                axes[1, label_index].set_ylabel("Frequency")
+            ax.scatter(label_y, label_pred)
+            ax.plot(boundaries, boundaries, "r--", label="y=x")
+            ax.text(
+                0.05,
+                0.95,
+                f"MARE: {error.abs().mean():.3f}",
+                ha="left",
+                va="top",
+                transform=ax.transAxes,
+            )
 
-    if args.layout == "horizontal":
-        axes[0, 0].set_ylabel("Predicted values")
-        axes[1, 0].set_ylabel("Frequency")
+            ax.set_xlabel(f"True {label_name}", fontsize=32)
+            ax.set_ylabel(f"Predicted {label_name}", fontsize=32)
 
     fig.tight_layout()
     plt.show()
