@@ -66,7 +66,7 @@ def train(
 
         print(f"Epoch {scheduler.last_epoch}:")
         print(
-            f"Best loss: {state_dict["best"]} | {epoch_state} | {lr:.2e} learning rate"
+            f"Best loss: {state_dict['best']} | {epoch_state} | {lr:.2e} learning rate"
         )
 
         initial_time = time.time()
