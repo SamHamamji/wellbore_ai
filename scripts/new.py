@@ -59,7 +59,9 @@ if __name__ == "__main__":
 
     x_shape, y_shape = map(lambda t: t.shape, ds[0])
     model = model_type(x_shape, y_shape)
-    output_shape: torch.Size = model(torch.ones(x_shape)).shape
+    model.eval()
+    with torch.no_grad():
+        output_shape: torch.Size = model(torch.ones((1, *x_shape))).shape
 
     print(f"Sample shapes: {x_shape=} {y_shape=} {output_shape=}")
     if os.path.exists(args.path) and input(
