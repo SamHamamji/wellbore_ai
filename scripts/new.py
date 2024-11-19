@@ -29,6 +29,13 @@ parser.add_argument(
 parser.add_argument("--target_signal_length", type=int, required=False)
 parser.add_argument("--max_vs", type=int, required=False)
 parser.add_argument("--max_vp", type=int, required=False)
+parser.add_argument(
+    "--noise_type",
+    type=str,
+    default=WellboreDataset.noise_types.__args__[0],
+    choices=WellboreDataset.noise_types.__args__,
+)
+parser.add_argument("--noise_std", type=float, default=None)
 parser.add_argument("--seed", type=int, default=0)
 
 
@@ -50,6 +57,8 @@ if __name__ == "__main__":
             range(args.max_vs) if args.max_vs else None,
             range(args.max_vp) if args.max_vp else None,
         ),
+        noise_type=args.noise_type,
+        noise_std=args.noise_std,
         x_transform=(
             model_type.dataset_x_transform  # type: ignore
             if hasattr(model_type, "dataset_x_transform")
