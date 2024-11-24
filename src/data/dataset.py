@@ -12,6 +12,28 @@ target_variables = f"vs({num})vp({num})(?:eps({num})gam({num})del({num}))?"
 matlab_file_regex = re.compile(f".*(?:ISO|VTI)_{target_variables}_MP_dipole.mat$")
 
 
+mat_variables = [
+    "c11_r",
+    "c13_r",
+    "c33_r",
+    "c44_r",
+    "c66_r",
+    "dens_r",
+    "vs_r",
+    "vp_r",
+    "dens_r",
+    "vs_r",
+    "vp_r",
+    "vs_r",
+    "vp_r",
+    "vs_r",
+    "vp_r",
+    "wavearray_param",
+    "dispersion_param",
+    "frequency_param",
+]
+
+
 def filter_file(file: str, label_bounds: tuple[range | None, ...]) -> bool:
     match = re.match(matlab_file_regex, file)
     if match is None:
@@ -34,10 +56,6 @@ class WellboreDataset(torch.utils.data.Dataset):
     noise_types = typing.Literal[
         "noiseless", "additive", "additive_relative", "multiplicative"
     ]
-    signal_type_dict: dict[signal_types, str] = {
-        "waveform": "wavearray_param",
-        "dispersion_curve": "slowness_param",
-    }
 
     def __init__(
         self,
@@ -61,7 +79,6 @@ class WellboreDataset(torch.utils.data.Dataset):
         self.x_transform = x_transform
         self.dtype = dtype
 
-        self.signal_type_str = self.signal_type_dict[self.signal_type]
         self.files = list(
             filter(
                 lambda file: filter_file(file.split("/")[-1], label_bounds),
@@ -167,19 +184,13 @@ class WellboreDataset(torch.utils.data.Dataset):
             return torch.Tensor(self.get_velocities(data, file_path))
         raise NotImplementedError()
 
-    def get_frequency_scale(self, index: int) -> torch.Tensor:
-        file_path = self.files[index]
-        data: dict = scipy.io.loadmat(file_path)
-        return torch.from_numpy(data["frequency_param"].T)
-
-    def __getitem__(self, index: int):
-        file_path = self.files[index]
-        data: dict = scipy.io.loadmat(file_path)
-
-        signal = torch.from_numpy(data[self.signal_type_str]).T.to(dtype=self.dtype)
-
-        if self.signal_type_str == "wavearray_param":
-            signal = signal[1:]  # Drop time row
+    def get_signal(self, data: dict, file_path: str):
+        if self.signal_type == "waveform":
+            signal = torch.from_numpy(data["wavearray_param"]).T[1:]  # drop time row
+        elif self.signal_type == "dispersion_curve":
+            signal = torch.from_numpy(data["dispersion_param"]).T
+        else:
+            raise ValueError(f"Unknown signal type: {self.signal_type}")
 
         if self.target_signal_length is not None:
             signal = signal[..., : self.target_signal_length]
@@ -196,6 +207,22 @@ class WellboreDataset(torch.utils.data.Dataset):
             with torch.no_grad():
                 signal: torch.Tensor = self.x_transform(signal)
 
+        return signal
+
+    def get_frequency_scale(self, index: int) -> torch.Tensor:
+        file_path = self.files[index]
+        data: dict = scipy.io.loadmat(file_path)
+        return torch.from_numpy(data["frequency_param"].T)
+
+    def __getitem__(self, index: int):
+        file_path = self.files[index]
+        data: dict = scipy.io.loadmat(file_path)
+
+        for key in list(data.keys()):
+            if key not in mat_variables:
+                del data[key]
+
+        signal = self.get_signal(data, file_path).to(dtype=self.dtype)
         labels = self.get_labels(data, file_path).to(dtype=self.dtype)
 
         return (signal, labels)
