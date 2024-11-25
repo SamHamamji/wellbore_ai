@@ -203,10 +203,6 @@ class WellboreDataset(torch.utils.data.Dataset):
         if self.noise_type == "multiplicative":
             signal.mul_(torch.normal(1, self.noise_std, signal.shape))
 
-        if self.x_transform is not None:
-            with torch.no_grad():
-                signal: torch.Tensor = self.x_transform(signal)
-
         return signal
 
     def get_frequency_scale(self, index: int) -> torch.Tensor:
@@ -218,12 +214,12 @@ class WellboreDataset(torch.utils.data.Dataset):
         file_path = self.files[index]
         data: dict = scipy.io.loadmat(file_path)
 
-        for key in list(data.keys()):
-            if key not in mat_variables:
-                del data[key]
-
         signal = self.get_signal(data, file_path).to(dtype=self.dtype)
         labels = self.get_labels(data, file_path).to(dtype=self.dtype)
+
+        if self.x_transform is not None:
+            with torch.no_grad():
+                signal: torch.Tensor = self.x_transform(signal)
 
         return (signal, labels)
 
