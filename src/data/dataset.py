@@ -12,28 +12,6 @@ target_variables = f"vs({num})vp({num})(?:eps({num})gam({num})del({num}))?"
 matlab_file_regex = re.compile(f".*(?:ISO|VTI)_{target_variables}_MP_dipole.mat$")
 
 
-mat_variables = [
-    "c11_r",
-    "c13_r",
-    "c33_r",
-    "c44_r",
-    "c66_r",
-    "dens_r",
-    "vs_r",
-    "vp_r",
-    "dens_r",
-    "vs_r",
-    "vp_r",
-    "vs_r",
-    "vp_r",
-    "vs_r",
-    "vp_r",
-    "wavearray_param",
-    "dispersion_param",
-    "frequency_param",
-]
-
-
 def filter_file(file: str, label_bounds: tuple[range | None, ...]) -> bool:
     match = re.match(matlab_file_regex, file)
     if match is None:
@@ -188,7 +166,7 @@ class WellboreDataset(torch.utils.data.Dataset):
         if self.signal_type == "waveform":
             signal = torch.from_numpy(data["wavearray_param"]).T[1:]  # drop time row
         elif self.signal_type == "dispersion_curve":
-            signal = torch.from_numpy(data["dispersion_param"]).T
+            signal = torch.from_numpy(data["slowness_param"]).T
         else:
             raise ValueError(f"Unknown signal type: {self.signal_type}")
 
