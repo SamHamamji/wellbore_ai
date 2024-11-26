@@ -3,7 +3,6 @@ import json
 import torch
 
 from src.data.dataset import WellboreDataset
-from src.pad_state_dicts import pad_model_state_dict, pad_optimizer_state_dict
 from src.history import History
 
 
@@ -62,10 +61,6 @@ class Checkpoint:
             optimizer
         )
         history = History()
-
-        pad_model_state_dict(model_state_dict, model, 0.001)
-        if optimizer_state_dict["state"]:
-            pad_optimizer_state_dict(optimizer_state_dict, model, 0, 0)
 
         model.load_state_dict(model_state_dict)
         optimizer.load_state_dict(optimizer_state_dict)
