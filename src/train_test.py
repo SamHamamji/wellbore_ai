@@ -39,7 +39,7 @@ def train_single_epoch(
         )
 
     return dict(
-        loss=total_loss.mean(0).sum(0).item(),
+        loss=total_loss.mean(0).sum(0),
     )
 
 
@@ -98,7 +98,7 @@ def train(
 
         if lr != scheduler.get_last_lr()[0]:
             lr = scheduler.get_last_lr()[0]
-            scheduler.best = scheduler_metric
+            scheduler.best = scheduler_metric.item()
 
 
 def test(
@@ -119,6 +119,6 @@ def test(
             total_y = torch.concat((total_y, y_batch))
 
     return {
-        metric_name: metric_fn(total_y, total_preds).item()
+        metric_name: metric_fn(total_y, total_preds)
         for metric_name, metric_fn in metrics.items()
     }
