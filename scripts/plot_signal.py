@@ -24,8 +24,8 @@ parser.add_argument("--seed", type=int, default=0)
 parser.add_argument(
     "--signal_type",
     type=str,
-    default=WellboreDataset.signal_types.__args__[0],
-    choices=WellboreDataset.signal_types.__args__,
+    default=WellboreDataset.data_field_types.__args__[0],
+    choices=WellboreDataset.data_field_types.__args__,
 )
 parser.add_argument(
     "--noise_type",

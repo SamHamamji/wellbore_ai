@@ -17,13 +17,13 @@ parser.add_argument("--model_type", type=str, choices=models.keys())
 parser.add_argument(
     "--signal_type",
     type=str,
-    choices=WellboreDataset.signal_types.__args__,
+    choices=WellboreDataset.data_field_types.__args__,
     required=True,
 )
 parser.add_argument(
     "--label_type",
     type=str,
-    choices=WellboreDataset.label_types.__args__,
+    choices=WellboreDataset.data_field_types.__args__,
     required=True,
 )
 parser.add_argument("--target_signal_length", type=int, required=False)
