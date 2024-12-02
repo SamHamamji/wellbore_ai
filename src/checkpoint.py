@@ -77,7 +77,7 @@ class Checkpoint:
         return Checkpoint(ds, model, optimizer, scheduler, history)
 
     def print(self):
-        print(f"Dataset kwargs: {self.ds.get_kwargs()}")
+        print(self.ds)
         print()
 
         X, y = next(iter(self.ds))
@@ -90,7 +90,7 @@ class Checkpoint:
 
         print("Parameters:")
         for name, param in self.model.named_parameters():
-            print(f"  {name}, {param.shape}, {param.numel()}")
+            print(f"\t{name}, {param.shape}, {param.numel()}")
         print()
 
         print(

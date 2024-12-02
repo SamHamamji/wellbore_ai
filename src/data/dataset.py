@@ -216,3 +216,6 @@ class WellboreDataset(torch.utils.data.Dataset):
         if self.label_type == "anisotropy":
             return ("Anisotropy",)
         raise NotImplementedError()
+
+    def __repr__(self) -> str:
+        return f"Dataset: {self.get_kwargs()}"
