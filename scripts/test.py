@@ -17,6 +17,7 @@ parser = argparse.ArgumentParser()
 
 parser.add_argument("--paths", type=str, required=True, nargs="+")
 parser.add_argument("--sum_aggregate", action="store_true")
+parser.add_argument("--classification_metrics", action="store_true")
 for ds_split in ds_splits:
     parser.add_argument(f"--{ds_split}", action="store_true")
 
@@ -33,7 +34,7 @@ parser.add_argument(
     default=WellboreDataset.noise_types.__args__[0],
     choices=WellboreDataset.noise_types.__args__,
 )
-parser.add_argument("--noise_std", type=float, default=None)
+parser.add_argument("--noise_std", type=float, default=0.0)
 parser.add_argument("--seed", type=int, default=0)
 
 
@@ -43,13 +44,20 @@ if __name__ == "__main__":
     np.random.seed(args.seed)
     torch.manual_seed(args.seed)
 
-    metrics: dict[str, metric.Metric] = {
-        "rmse": lambda y, pred: metric.squared_error(y, pred).mean(0).sqrt_(),
-        "mae": lambda y, pred: metric.absolute_error(y, pred).abs_().mean(0),
-        "error std": lambda y, pred: metric.absolute_error(y, pred).std(0),
-        "mare": lambda y, pred: metric.relative_error(y, pred).abs_().mean(0),
-        "relative error std": lambda y, pred: metric.relative_error(y, pred).std(0),
-    }
+    metrics: dict[str, metric.Metric] = (
+        {
+            "bce": lambda y, pred: metric.binary_cross_entropy(y, pred).mean(0),
+            "accuracy": lambda y, pred: metric.accuracy(y, pred).mean(0),
+        }
+        if args.classification_metrics
+        else {
+            "rmse": lambda y, pred: metric.squared_error(y, pred).mean(0).sqrt_(),
+            "mae": lambda y, pred: metric.absolute_error(y, pred).abs_().mean(0),
+            "error std": lambda y, pred: metric.absolute_error(y, pred).std(0),
+            "mare": lambda y, pred: metric.relative_error(y, pred).abs_().mean(0),
+            "relative error std": lambda y, pred: metric.relative_error(y, pred).std(0),
+        }
+    )
 
     if not any(getattr(args, split_name) for split_name in ds_splits):
         raise ValueError("No dataset split specified")
