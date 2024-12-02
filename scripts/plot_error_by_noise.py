@@ -17,6 +17,7 @@ parser = argparse.ArgumentParser()
 
 parser.add_argument("--path", type=str, required=True)
 parser.add_argument("--splits", type=float, nargs="+", default=(0.7, 0.2, 0.1))
+parser.add_argument("--metric", type=str, choices=metric.error_metrics.keys())
 parser.add_argument("--noise_std_min", type=float, default=0)
 parser.add_argument("--noise_std_max", type=float, required=True)
 parser.add_argument("--noise_std_step", type=float, required=True)
@@ -34,12 +35,12 @@ parser.add_argument(
 )
 
 
-def get_figure_plotly(errors: torch.Tensor, noise_stds: torch.Tensor):
+def get_figure_plotly(errors: torch.Tensor, noise_stds: torch.Tensor, metric_name: str):
     fig = go.Figure(
         go.Scatter(x=noise_stds, y=errors, mode="lines", showlegend=False),
         layout={
             "xaxis_title": "Noise std",
-            "yaxis_title": "MARE",
+            "yaxis_title": metric_name,
         },
     )
     return fig
@@ -49,17 +50,18 @@ def show_plot_matplotlib(
     errors: torch.Tensor,
     noise_stds: torch.Tensor,
     noise_type: WellboreDataset.noise_types,
+    metric_name: str,
 ):
     plt.figure()
 
-    xlabel = f"{noise_type.replace("_", " ").capitalize()} noise std"
+    xlabel = f"{noise_type.replace('_', ' ').capitalize()} noise std"
     if noise_type == "additive_relative":
         xlabel = "Additive noise std (%)"
         noise_stds.mul_(100)
 
     plt.plot(noise_stds, errors, marker="o")
     plt.xlabel(xlabel)
-    plt.ylabel("MARE")
+    plt.ylabel(metric_name)
     plt.tight_layout()
     plt.show()
 
@@ -77,7 +79,7 @@ if __name__ == "__main__":
     )
 
     error_metric: metric.Metric = (
-        lambda y, pred: metric.absolute_relative_error(y, pred).mean(0).sum(0)
+        lambda y, pred: metric.error_metrics[args.metric](y, pred).mean(0).sum(0)
     )
     errors = []
     for std in std_range:
@@ -94,13 +96,14 @@ if __name__ == "__main__":
         y: torch.Tensor
 
         with torch.no_grad():
-            pred = checkpoint.model(X)
+            pred: torch.Tensor = checkpoint.model(X)
 
         errors.append(error_metric(y, pred).item())
 
     errors = torch.tensor(errors)
 
+    metric_name = args.metric.replace("_", " ").capitalize()
     if args.engine == "plotly":
-        get_figure_plotly(errors, std_range).show()
+        get_figure_plotly(errors, std_range, metric_name).show()
     elif args.engine == "matplotlib":
-        show_plot_matplotlib(errors, std_range, args.noise_type)
+        show_plot_matplotlib(errors, std_range, args.noise_type, metric_name)
