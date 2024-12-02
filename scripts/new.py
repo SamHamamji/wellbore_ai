@@ -1,3 +1,5 @@
+"""Initializes a new checkpoint."""
+
 import argparse
 import os
 

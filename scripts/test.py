@@ -1,3 +1,5 @@
+"""Tests a model from a checkpoint. Each split is tested separately."""
+
 import argparse
 
 import numpy as np

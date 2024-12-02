@@ -1,3 +1,5 @@
+"""Plots a single data sample from the dataset."""
+
 import argparse
 
 import torch.utils.data

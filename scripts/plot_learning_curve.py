@@ -1,3 +1,5 @@
+"""Plots the learning curve from a checkpoint."""
+
 import argparse
 
 from src.checkpoint import Checkpoint

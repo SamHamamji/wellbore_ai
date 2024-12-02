@@ -1,3 +1,5 @@
+"""Duplicates a dataset while removing all its unused fields"""
+
 import argparse
 import glob
 import os
@@ -48,6 +50,3 @@ if __name__ == "__main__":
 
         os.makedirs(os.path.dirname(new_file_path), exist_ok=True)
         scipy.io.savemat(new_file_path, data)
-
-    print(files)
-    print(len(files))

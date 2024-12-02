@@ -1,3 +1,5 @@
+"""Displays information about a checkpoint."""
+
 import argparse
 
 from src.checkpoint import Checkpoint

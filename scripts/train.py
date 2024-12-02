@@ -1,3 +1,5 @@
+"""Trains a model from a checkpoint."""
+
 import argparse
 
 import numpy as np

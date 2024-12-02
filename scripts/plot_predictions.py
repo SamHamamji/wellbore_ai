@@ -1,3 +1,5 @@
+"""Plots predictions of a model on its testing dataset."""
+
 import argparse
 
 import numpy as np

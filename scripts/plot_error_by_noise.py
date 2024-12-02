@@ -1,3 +1,5 @@
+"""Plots a curve of a metric by the noise standard deviation."""
+
 import argparse
 
 import torch.utils.data
