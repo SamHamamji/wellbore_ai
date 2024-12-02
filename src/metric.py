@@ -8,6 +8,7 @@ Metric = typing.Callable[[torch.Tensor, torch.Tensor], torch.Tensor]
 absolute_error: Metric = lambda y, pred: (pred - y)
 squared_error: Metric = lambda y, pred: (pred - y).square_()
 relative_error: Metric = lambda y, pred: (pred - y).div_(y)
+absolute_relative_error: Metric = lambda y, pred: (pred - y).div_(y).abs_()
 binary_cross_entropy: Metric = (
     lambda y, pred: (pred.clamp(min=1e-10).log_().mul_(y))
     .add_((1 - pred).clamp(min=1e-10).log_().mul_(1 - y))
@@ -19,5 +20,7 @@ error_metrics: dict[str, Metric] = {
     "absolute_error": absolute_error,
     "squared_error": squared_error,
     "relative_error": relative_error,
+    "absolute_relative_error": absolute_relative_error,
     "binary_cross_entropy": binary_cross_entropy,
+    "accuracy": accuracy,
 }

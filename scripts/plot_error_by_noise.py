@@ -77,7 +77,7 @@ if __name__ == "__main__":
     )
 
     error_metric: metric.Metric = (
-        lambda y, pred: metric.relative_error(y, pred).abs_().mean(0).sum(0)
+        lambda y, pred: metric.absolute_relative_error(y, pred).mean(0).sum(0)
     )
     errors = []
     for std in std_range:
